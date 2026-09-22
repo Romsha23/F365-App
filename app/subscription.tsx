@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Stack, router } from 'expo-router';
 import Colors from '../constants/colors';
-import { Crown, Check, Gift, ChevronRight, Sparkles } from 'lucide-react-native';
+import { Crown, Check, Gift, ChevronRight, Sparkles, Zap } from 'lucide-react-native';
 import { useSubscriptionStore } from '../store/subscription-store';
 
 export default function SubscriptionScreen() {
@@ -14,11 +14,27 @@ export default function SubscriptionScreen() {
     router.push('/subscription-success' as any);
   };
 
+  const plusFeatures = [
+    'Unlimited cycle tracking',
+    'AI-powered insights & predictions',
+    'AI health assistant chat',
+    'Advanced analytics & reports',
+    'Data export',
+    'Priority support',
+  ];
+
+  const freeFeatures = [
+    'Basic cycle tracking',
+    'Calendar view',
+    'Symptom logging',
+    'Period predictions',
+  ];
+
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Activate Pro',
+          title: 'Choose a Plan',
           headerBackTitle: 'Back',
         }}
       />
@@ -28,63 +44,99 @@ export default function SubscriptionScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
         <View style={styles.heroSection}>
           <View style={styles.iconContainer}>
-            <Crown size={40} color={Colors.gold} />
+            <Crown size={36} color={Colors.gold} />
           </View>
-          <Text style={styles.title}>Activate Pro</Text>
+          <Text style={styles.title}>Unlock Full Access</Text>
           <Text style={styles.subtitle}>
-            Enter your activation code to unlock all premium features.
+            Choose the plan that works best for you
           </Text>
         </View>
 
-        <View style={styles.featuresCard}>
-          <Text style={styles.featuresTitle}>What you get with Pro:</Text>
-          {[
-            'Unlimited cycle tracking',
-            'AI-powered insights & predictions',
-            'AI health assistant chat',
-            'Advanced analytics & reports',
-            'Data export',
-            'Priority support',
-          ].map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <Check size={16} color={Colors.success} />
+        {/* PLUS PLAN — Most Popular */}
+        <View style={styles.popularBadgeRow}>
+          <View style={styles.popularBadge}>
+            <Sparkles size={12} color="#fff" />
+            <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+          </View>
+        </View>
+
+        <View style={[styles.planCard, styles.planCardPlus]}>
+          <View style={styles.planHeader}>
+            <View style={styles.planTitleRow}>
+              <Crown size={22} color={Colors.gold} />
+              <Text style={[styles.planName, styles.planNamePlus]}>Plus</Text>
+            </View>
+            <View style={styles.planPriceContainer}>
+              <Text style={styles.planPriceNote}>Activate with code</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {plusFeatures.map((feature, i) => (
+            <View key={i} style={styles.featureRow}>
+              <View style={styles.checkCirclePlus}>
+                <Check size={12} color="#fff" />
+              </View>
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
+
+          <TouchableOpacity
+            style={styles.plusCta}
+            onPress={() => router.push('/redeem-code' as any)}
+            activeOpacity={0.85}
+          >
+            <Gift size={18} color="#fff" />
+            <Text style={styles.plusCtaText}>Activate with Code</Text>
+            <ChevronRight size={16} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.demoCta}
+            onPress={handleTemporaryAccess}
+            activeOpacity={0.85}
+          >
+            <Sparkles size={14} color={Colors.gold} />
+            <Text style={styles.demoCtaText}>Try Pro free (demo)</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.activateNotice}>
-          <Sparkles size={20} color={Colors.gold} />
-          <Text style={styles.activateNoticeText}>
-            Activation is managed on the web. Enter your redemption code here to unlock Pro.
-          </Text>
+        {/* FREE PLAN */}
+        <View style={[styles.planCard, styles.planCardFree]}>
+          <View style={styles.planHeader}>
+            <View style={styles.planTitleRow}>
+              <Zap size={20} color={Colors.subtext} />
+              <Text style={[styles.planName, styles.planNameFree]}>Free</Text>
+            </View>
+            <Text style={styles.planPriceNote}>No cost, always</Text>
+          </View>
+
+          <View style={styles.divider} />
+
+          {freeFeatures.map((feature, i) => (
+            <View key={i} style={styles.featureRow}>
+              <View style={styles.checkCircleFree}>
+                <Check size={12} color={Colors.subtext} />
+              </View>
+              <Text style={[styles.featureText, styles.featureTextFree]}>{feature}</Text>
+            </View>
+          ))}
+
+          <TouchableOpacity
+            style={styles.freeCta}
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.freeCtaText}>Continue with Free</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.redeemButton}
-          onPress={() => router.push('/redeem-code' as any)}
-          activeOpacity={0.8}
-          testID="subscription-redeem-button"
-        >
-          <Gift size={20} color={Colors.white} />
-          <Text style={styles.redeemButtonText}>Enter Activation Code</Text>
-          <ChevronRight size={18} color={Colors.white} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.demoButton}
-          onPress={handleTemporaryAccess}
-          activeOpacity={0.9}
-          testID="subscription-demo-button"
-        >
-          <Sparkles size={18} color={Colors.gold} />
-          <Text style={styles.demoButtonText}>Grant temporary Pro access</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.secureText}>
-          Premium features unlock instantly after activation.
+        <Text style={styles.footerNote}>
+          Premium features unlock instantly after entering your activation code.
         </Text>
       </ScrollView>
     </View>
@@ -100,108 +152,198 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
+    padding: 20,
     paddingBottom: 48,
   },
+
+  // Hero
   heroSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: Colors.gold + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold' as const,
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: Colors.subtext,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 16,
-  },
-  featuresCard: {
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  featuresTitle: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: Colors.text,
     marginBottom: 16,
   },
-  featureItem: {
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold' as const,
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.subtext,
+    textAlign: 'center',
+  },
+
+  // Popular badge
+  popularBadgeRow: {
+    alignItems: 'center',
+    marginBottom: -10,
+    zIndex: 1,
+  },
+  popularBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.gold,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  popularBadgeText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+
+  // Plan cards
+  planCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  planCardPlus: {
+    backgroundColor: Colors.card,
+    borderWidth: 2,
+    borderColor: Colors.gold,
+    shadowColor: Colors.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  planCardFree: {
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+
+  planHeader: {
     marginBottom: 12,
-    gap: 10,
+    marginTop: 6,
   },
-  featureText: {
-    fontSize: 15,
-    color: Colors.text,
-  },
-  activateNotice: {
+  planTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gold + '12',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-    gap: 10,
+    gap: 8,
+    marginBottom: 4,
   },
-  activateNoticeText: {
-    flex: 1,
+  planName: {
+    fontSize: 22,
+    fontWeight: 'bold' as const,
+  },
+  planNamePlus: {
+    color: Colors.gold,
+  },
+  planNameFree: {
+    color: Colors.subtext,
+  },
+  planPriceContainer: {
+    marginTop: 2,
+  },
+  planPriceNote: {
     fontSize: 13,
-    color: Colors.text,
-    lineHeight: 18,
+    color: Colors.subtext,
   },
-  redeemButton: {
+
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginBottom: 14,
+  },
+
+  featureRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  checkCirclePlus: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.gold,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gold,
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    marginBottom: 24,
-    gap: 10,
+    flexShrink: 0,
   },
-  redeemButtonText: {
-    fontSize: 17,
-    fontWeight: '700' as const,
-    color: Colors.white,
+  checkCircleFree: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  demoButton: {
+  featureText: {
+    fontSize: 14,
+    color: Colors.text,
+    flex: 1,
+  },
+  featureTextFree: {
+    color: Colors.subtext,
+  },
+
+  // Plus CTAs
+  plusCta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    backgroundColor: Colors.gold,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  plusCtaText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#fff',
+  },
+  demoCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  demoCtaText: {
+    fontSize: 13,
+    color: Colors.gold,
+    fontWeight: '500' as const,
+  },
+
+  // Free CTA
+  freeCta: {
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 12,
-    marginBottom: 16,
+    marginTop: 16,
   },
-  demoButtonText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.text,
+  freeCtaText: {
+    fontSize: 15,
+    color: Colors.subtext,
+    fontWeight: '500' as const,
   },
-  secureText: {
-    fontSize: 13,
+
+  footerNote: {
+    fontSize: 12,
     color: Colors.subtext,
     textAlign: 'center',
     lineHeight: 18,
+    marginTop: 4,
   },
 });

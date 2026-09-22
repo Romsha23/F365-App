@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Logo } from '../components/Logo';
@@ -42,6 +43,8 @@ type AuthMode = 'login' | 'signup' | 'forgot_password';
  * Development/standalone build:
  *   flo365://auth/callback
  */
+const SUPABASE_URL = 'https://xftwntynzjgaedyfyxew.supabase.co';
+
 const getAuthRedirectUrl = (path = 'auth/callback') => {
   if (Platform.OS === 'web') {
     const normalizedPath = path.startsWith('/')
@@ -51,9 +54,12 @@ const getAuthRedirectUrl = (path = 'auth/callback') => {
     return `${window.location.origin}${normalizedPath}`;
   }
 
-  return makeRedirectUri({
-    path,
-  });
+  // For Expo Go and native builds, use the Supabase callback URL.
+  // Google only accepts https:// redirect URIs, so exp:// URLs can't be
+  // whitelisted directly. Supabase acts as the middleman:
+  //   App → Google OAuth → Supabase callback → deep link back to app
+  // The deep link uses the app scheme (flo365://) defined in app.json.
+  return `${SUPABASE_URL}/auth/v1/callback`;
 };
 
 export default function LoginScreen() {
@@ -533,16 +539,34 @@ export default function LoginScreen() {
       }
 
       // ─── NATIVE: use expo-web-browser in-app tab ─────────────────────
-      const redirectUrl = getAuthRedirectUrl();
-      console.log('[Google/native] redirect URL:', redirectUrl);
+      // Android Chrome Custom Tabs cannot redirect to exp:// URLs, so we
+      // don't rely on the deep-link redirect at all. Instead:
+      // 1. Open the Google OAuth URL in the in-app browser
+      // 2. Supabase handles the code exchange server-side on its own domain
+      // 3. Supabase redirects to our exp:// URL — Android closes the browser
+      //    (result: dismiss) and fires a Linking event OR the session is
+      //    already written to the Supabase client via SIGNED_IN event
+      // 4. We listen for SIGNED_IN on onAuthStateChange and route the user
+
+      const appRedirectUri = makeRedirectUri({ path: 'auth/callback' });
+      console.log('[Google/native] redirect URI:', appRedirectUri);
+
+      // Pre-warm browser for faster open
+      void WebBrowser.warmUpAsync();
 
       const { data, error: oAuthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl,
+          redirectTo: appRedirectUri,
           skipBrowserRedirect: true,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
         },
       });
+
+      void WebBrowser.coolDownAsync();
 
       if (oAuthError || !data.url) {
         console.error('[Google/native] OAuth error:', oAuthError);
@@ -551,78 +575,80 @@ export default function LoginScreen() {
         return;
       }
 
-      console.log('Opening Google authentication browser...');
-
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-
-      console.log('=== OAUTH BROWSER RESULT ===');
-      console.log('Result type:', result.type);
-      console.log('Result URL:', 'url' in result ? result.url : 'No URL');
-
-      if (result.type === 'success' && result.url) {
-        const callbackUrl = result.url;
-        const url = new URL(callbackUrl);
-        const hashParams = new URLSearchParams(url.hash.replace('#', ''));
-        const queryParams = url.searchParams;
-
-        const code = queryParams.get('code') || hashParams.get('code');
-        const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
-
-        console.log('Has OAuth code:', !!code);
-        console.log('Has access token:', !!accessToken);
-        console.log('Has refresh token:', !!refreshToken);
-
-        if (code) {
-          console.log('Exchanging OAuth code for session...');
-          const { data: sessionData, error: sessionError } =
-            await supabase.auth.exchangeCodeForSession(code);
-
-          if (sessionError) {
-            console.error('Session exchange error:', sessionError);
-            setError('Failed to complete sign in. Please try again.');
-            setIsLoading(false);
-            return;
+      // Listen for SIGNED_IN BEFORE opening browser
+      const signInPromise = new Promise<any>((resolve) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('[Google/native] Auth event:', event);
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+            subscription.unsubscribe();
+            resolve(session.user);
           }
+        });
+        // 2-minute timeout
+        setTimeout(() => { subscription.unsubscribe(); resolve(null); }, 120000);
+      });
 
-          console.log('OAuth session exchange successful.');
-
-          if (sessionData.user) {
-            await handlePostOAuthLogin(sessionData.user);
-          } else {
-            setError('Google sign in could not find your account.');
+      // Also listen via Linking for the deep link
+      const linkingPromise = new Promise<string | null>((resolve) => {
+        const sub = Linking.addEventListener('url', ({ url: incomingUrl }) => {
+          console.log('[Google/native] Linking URL:', incomingUrl);
+          if (incomingUrl.includes('auth/callback') || incomingUrl.includes('access_token') || incomingUrl.includes('code=')) {
+            sub.remove();
+            resolve(incomingUrl);
           }
-        } else if (accessToken && refreshToken) {
-          console.log('OAuth tokens received. Setting session...');
-          const { data: sessionData, error: sessionError } =
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
+        });
+        setTimeout(() => { sub.remove(); resolve(null); }, 120000);
+      });
 
-          if (sessionError) {
-            console.error('Session error:', sessionError);
-            setError('Failed to complete sign in. Please try again.');
-            setIsLoading(false);
-            return;
-          }
+      console.log('[Google/native] Opening browser...');
+      await WebBrowser.openAuthSessionAsync(data.url, appRedirectUri);
+      console.log('[Google/native] Browser closed');
 
-          console.log('OAuth token session created successfully.');
+      // Race: either onAuthStateChange fires, or Linking gives us a URL, or timeout
+      const [signedInUser, deepLinkUrl] = await Promise.all([
+        Promise.race([signInPromise, new Promise<null>(r => setTimeout(() => r(null), 10000))]),
+        Promise.race([linkingPromise, new Promise<null>(r => setTimeout(() => r(null), 3000))]),
+      ]);
 
-          if (sessionData.user) {
-            await handlePostOAuthLogin(sessionData.user);
-          }
-        } else {
-          console.error('OAuth callback missing auth parameters. URL:', callbackUrl);
-          setError('Google sign in returned without authentication details.');
-        }
-      } else {
-        if (result.type === 'cancel') {
-          setError('Google sign in was cancelled.');
-        }
-        console.log('OAuth browser result:', result);
+      console.log('[Google/native] signedInUser:', !!signedInUser, '| deepLinkUrl:', deepLinkUrl ?? 'none');
+
+      // Path 1: onAuthStateChange gave us the user directly
+      if (signedInUser) {
+        console.log('[Google/native] Got user from SIGNED_IN event');
+        await handlePostOAuthLogin(signedInUser);
+        return;
       }
 
+      // Path 2: parse code/token from deep link URL
+      if (deepLinkUrl) {
+        const urlObj = new URL(deepLinkUrl);
+        const hash = new URLSearchParams(urlObj.hash.replace('#', ''));
+        const query = urlObj.searchParams;
+        const code = query.get('code') || hash.get('code');
+        const accessToken = hash.get('access_token') || query.get('access_token');
+        const refreshToken = hash.get('refresh_token') || query.get('refresh_token');
+        console.log('[Google/native] code:', !!code, 'access_token:', !!accessToken);
+
+        if (code) {
+          const { data: sd, error: se } = await supabase.auth.exchangeCodeForSession(code);
+          if (!se && sd.user) { await handlePostOAuthLogin(sd.user); return; }
+        } else if (accessToken && refreshToken) {
+          const { data: sd, error: se } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (!se && sd.user) { await handlePostOAuthLogin(sd.user); return; }
+        }
+      }
+
+      // Path 3: check session directly (last resort)
+      console.log('[Google/native] Final getSession check...');
+      const { data: { session: finalSession } } = await supabase.auth.getSession();
+      if (finalSession?.user) {
+        console.log('[Google/native] Session found in final check');
+        await handlePostOAuthLogin(finalSession.user);
+        return;
+      }
+
+      console.error('[Google/native] All paths exhausted — no session');
+      setError('Google sign in did not complete. Please try again.');
       console.log('=== GOOGLE SIGN IN COMPLETE ===');
     } catch (err) {
       console.error('Google sign in error:', err);

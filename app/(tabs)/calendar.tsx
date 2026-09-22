@@ -211,9 +211,9 @@ export default function CalendarScreen() {
       // Calculate days needed from previous month to fill the first row
       const daysFromPrevMonth = firstDayOfWeek;
       
-      // Calculate total days needed (previous month + current month + next month)
-      // We'll always show 6 rows (42 days) for consistency
-      const totalDays = 42;
+      // Use minimum rows needed — 5 or 6, not always 6
+      const rowsNeeded = Math.ceil((firstDayOfWeek + daysInMonth) / 7);
+      const totalDays = rowsNeeded * 7;
       
       // Calculate days needed from next month
       const daysFromNextMonth = totalDays - daysInMonth - daysFromPrevMonth;
@@ -373,67 +373,45 @@ export default function CalendarScreen() {
         </View>
       );
     }
-    
+    const rows: Date[][] = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      rows.push(calendarDays.slice(i, i + 7));
+    }
     return (
-      <View style={styles.calendarGrid}>
-        {calendarDays.map((date, index) => {
-          const isCurrentMonth = date.getMonth() === currentMonth;
-          const isToday = DateUtils.isSameDay(date, new Date());
-          
-          // Get cycle day status
-          let isPeriod = false;
-          let isFertile = false;
-          let isOvulation = false;
-          let isPredicted = false;
-          let dayData = undefined;
-          
-          try {
-            // Create an array with the predictions object if it exists
-            const predictionsArray = predictions ? [predictions] : [];
-            const status = DateUtils.getCycleDayStatus(date, cycles, predictionsArray);
-            isPeriod = status.isPeriod;
-            isFertile = status.isFertile;
-            isOvulation = status.isOvulation;
-            isPredicted = status.isPredicted;
-            
-            // Get day data for mood and symptoms
-            const dateStr = date.toISOString().split('T')[0];
-            for (const cycle of cycles) {
-              if (!cycle || !cycle.days || !Array.isArray(cycle.days)) continue;
-              const foundDay = cycle.days.find(day => day && day.date && day.date.split('T')[0] === dateStr);
-              if (foundDay) {
-                dayData = {
-                  mood: foundDay.mood,
-                  symptoms: foundDay.symptoms || foundDay.symptomsWithIntensity?.map(s => s.id),
-                  flow: foundDay.flow,
-                };
-                break;
-              }
-            }
-          } catch (error) {
-            console.error('Error getting cycle day status:', error);
-          }
-          
-          return (
-            <CalendarDay
-              key={index}
-              date={date}
-              isCurrentMonth={isCurrentMonth}
-              isToday={isToday}
-              isPeriod={isPeriod}
-              isFertile={isFertile}
-              isOvulation={isOvulation}
-              isPredicted={isPredicted}
-              dayData={dayData}
-              onPress={handleDayPress}
-            />
-          );
-        })}
+      <View>
+        {rows.map((week, rowIndex) => (
+          <View key={rowIndex} style={styles.calendarRow}>
+            {week.map((date, colIndex) => {
+              const isCurrentMonth = date.getMonth() === currentMonth;
+              const isToday = DateUtils.isSameDay(date, new Date());
+              let isPeriod = false;
+              let isFertile = false;
+              let isOvulation = false;
+              let isPredicted = false;
+              let dayData: any = undefined;
+              try {
+                const predictionsArray = predictions ? [predictions] : [];
+                const status = DateUtils.getCycleDayStatus(date, cycles, predictionsArray);
+                isPeriod = status.isPeriod;
+                isFertile = status.isFertile;
+                isOvulation = status.isOvulation;
+                isPredicted = status.isPredicted;
+                const dateStr = date.toISOString().split('T')[0];
+                for (const cycle of cycles) {
+                  if (!cycle || !cycle.days || !Array.isArray(cycle.days)) continue;
+                  const foundDay = cycle.days.find((day: any) => day && day.date && day.date.split('T')[0] === dateStr);
+                  if (foundDay) { dayData = { mood: foundDay.mood, symptoms: foundDay.symptoms || foundDay.symptomsWithIntensity?.map((s: any) => s.id), flow: foundDay.flow }; break; }
+                }
+              } catch (e) {}
+              return (<CalendarDay key={colIndex} date={date} isCurrentMonth={isCurrentMonth} isToday={isToday} isPeriod={isPeriod} isFertile={isFertile} isOvulation={isOvulation} isPredicted={isPredicted} dayData={dayData} onPress={handleDayPress} />);
+            })}
+          </View>
+        ))}
       </View>
     );
   };
-  
-  const renderSelectedDayInfo = () => {
+
+    const renderSelectedDayInfo = () => {
     if (!selectedDayData) {
       return (
         <Card style={styles.noDayDataCard}>
@@ -549,10 +527,9 @@ export default function CalendarScreen() {
               style={styles.monthTitleContainer}
               onPress={toggleMonthYearModal}
             >
-              <Text style={styles.monthTitle}>
+              <Text style={styles.monthTitle} numberOfLines={1} adjustsFontSizeToFit>
                 {monthNames[currentMonth]} {currentYear}
               </Text>
-              <CalendarIcon size={16} color={Colors.primary} style={styles.calendarIcon} />
             </TouchableOpacity>
             
             <TouchableOpacity onPress={handleNextMonth} style={styles.monthButton}>
@@ -705,7 +682,6 @@ const styles = StyleSheet.create({
   },
   monthSelector: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -713,42 +689,47 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: Colors.card,
+    flexShrink: 0,
+    flexGrow: 0,
   },
   monthTitleContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     borderRadius: 8,
     backgroundColor: Colors.background,
-    flex: 1,
-    justifyContent: 'center',
-    marginHorizontal: 4,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+    minWidth: 0,
   },
   monthTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: Colors.text,
     flexShrink: 1,
+    flexGrow: 0,
   },
   calendarIcon: {
-    marginLeft: 8,
+    marginLeft: 6,
+    flexShrink: 0,
+    flexGrow: 0,
   },
   weekdayHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     marginBottom: 8,
   },
   weekdayText: {
-    width: 40,
+    flex: 1,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',
     color: Colors.subtext,
   },
-  calendarGrid: {
+  calendarRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
   },
   legendContainer: {
     flexDirection: 'row',

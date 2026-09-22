@@ -102,7 +102,6 @@ export const getCalendarDays = (year: number, month: number): Date[] => {
       days.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
       
-      if (days.length >= 42) break;
     }
     
     return days;

@@ -17,6 +17,7 @@ import { useUserStore } from '../store/user-store';
 import { useSubscriptionStore } from '../store/subscription-store';
 import { getDeviceCountryCode, checkCountryAccess, CountryAccessResult } from '../utils/country-access';
 import { CountryBlockedScreen } from '../components/CountryBlockedScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const unstable_settings = {
   initialRouteName: "login",
@@ -92,9 +93,11 @@ function AppLoadingScreen() {
 
 function AppInitializer({ children }: { children: ReactNode }) {
   const { isChecking } = useDatabaseSetup();
-  const [isRestoringSession, setIsRestoringSession] = useState(true);
+  // On native, session is read from AsyncStorage synchronously — don't block.
+  // On web, we may need to wait for OAuth code exchange.
+  const [isRestoringSession, setIsRestoringSession] = useState(Platform.OS === 'web');
   const [countryBlock, setCountryBlock] = useState<CountryAccessResult | null>(null);
-  const [isCheckingCountry, setIsCheckingCountry] = useState(true);
+  const [isCheckingCountry, setIsCheckingCountry] = useState(false);
   const { register, setAuthId } = useUserStore();
   const { validateSubscription } = useSubscriptionStore();
   
@@ -110,16 +113,25 @@ function AppInitializer({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkDeviceCountry = async () => {
       try {
-        console.log('[CountryCheck] Checking device country pre-login...');
         const deviceCountry = getDeviceCountryCode();
-        console.log('[CountryCheck] Device country detected:', deviceCountry);
-        if (deviceCountry) {
-          const result = await checkCountryAccess(deviceCountry);
-          if (result.isBlocked) {
-            console.warn('[CountryCheck] Device country BLOCKED:', deviceCountry);
-            setCountryBlock(result);
-          }
+        // If no country detected (common), skip the network call entirely
+        if (!deviceCountry) {
+          setIsCheckingCountry(false);
+          return;
         }
+        // Check cache first — avoid a network call on every launch
+        const cacheKey = `@country_access_${deviceCountry}`;
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached !== null) {
+          const parsed = JSON.parse(cached);
+          if (parsed.isBlocked) setCountryBlock(parsed);
+          setIsCheckingCountry(false);
+          return;
+        }
+        const result = await checkCountryAccess(deviceCountry);
+        // Cache for 24 hours
+        await AsyncStorage.setItem(cacheKey, JSON.stringify(result));
+        if (result.isBlocked) setCountryBlock(result);
       } catch (error) {
         console.error('[CountryCheck] Pre-login country check error:', error);
       } finally {
@@ -149,9 +161,9 @@ function AppInitializer({ children }: { children: ReactNode }) {
         
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => {
-          console.warn('[Session] Session restore timed out after 4s');
+          console.warn('[Session] Session restore timed out after 800ms');
           resolve(null);
-        }, 4000));
+        }, 800));
         
         const result = await Promise.race([sessionPromise, timeoutPromise]);
         
@@ -244,8 +256,19 @@ function AppInitializer({ children }: { children: ReactNode }) {
 
         const existingUser = useUserStore.getState().user;
         if (existingUser) {
-          // restoreSession or login.tsx already hydrated the store — skip.
-          // But still release the loading screen if we're on an OAuth callback.
+          // login.tsx or restoreSession already handled this — skip.
+          setIsRestoringSession(false);
+          return;
+        }
+
+        // Only handle SIGNED_IN if we're still on the loading screen
+        // (OAuth callback flow). For email login, login.tsx handles routing.
+        const isOAuth = Platform.OS === 'web'
+          ? (window.location.search.includes('code=') || window.location.hash.includes('access_token='))
+          : false;
+
+        if (!isOAuth) {
+          // Email login — login.tsx is handling routing, don't interfere.
           setIsRestoringSession(false);
           return;
         }
@@ -298,7 +321,7 @@ function AppInitializer({ children }: { children: ReactNode }) {
     }
   }, [isChecking, fontsReady, isRestoringSession, isCheckingCountry]);
 
-  if (!fontsReady || isRestoringSession || isCheckingCountry) {
+  if (isRestoringSession) {
     return <AppLoadingScreen />;
   }
 

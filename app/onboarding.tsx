@@ -67,7 +67,7 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 3 }, (_, i) => (currentYear - i).toString());
+const YEARS = [currentYear.toString()];
 const BIRTH_YEARS = Array.from({ length: 70 }, (_, i) => (currentYear - 10 - i).toString());
 
 const CYCLE_LENGTHS = Array.from({ length: 15 }, (_, i) => (i + 21).toString());

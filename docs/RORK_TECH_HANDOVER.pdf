@@ -1,0 +1,811 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R 14 0 R 16 0 R 18 0 R] /Count 8 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 3116 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(F365 Advanced - Rork Technical Handover) Tj
+0 -14 Td
+(Generated: 2026-04-27) Tj
+0 -14 Td
+(Project ID: djfjyvp3u2vqdjlqopmjj) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(1. Executive Summary) Tj
+0 -14 Td
+(F365 Advanced is a cross-platform Expo / React Native health and fertility app built in ) Tj
+0 -14 Td
+(Rork. It runs on iOS, Android, and web through Expo Router and React Native Web. The ) Tj
+0 -14 Td
+(current stack combines a React Native frontend, Supabase authentication/database, Hono +) Tj
+0 -14 Td
+( tRPC backend routes, Rork toolkit services, Mixpanel analytics, Stripe hosted checkout,) Tj
+0 -14 Td
+( Expo notifications, and fertility/AI modules.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(2. Current Runtime and Project Structure) Tj
+0 -14 Td
+(App root: expo/) Tj
+0 -14 Td
+(Main entry: expo-router/entry) Tj
+0 -14 Td
+(Root layout: expo/app/_layout.tsx) Tj
+0 -14 Td
+(Navigation: Expo Router Stack plus tabs under app/\(tabs\)) Tj
+0 -14 Td
+(Package manager: bun) Tj
+0 -14 Td
+(Framework versions: Expo SDK 54, React Native 0.81.5, React 19.1.0, Expo Router 6.0.15) Tj
+0 -14 Td
+(Backend style: Hono + tRPC, with React Query provider at app root) Tj
+0 -14 Td
+(Database/Auth provider: Supabase) Tj
+0 -14 Td
+(Analytics: Mixpanel custom HTTP implementation) Tj
+0 -14 Td
+(Payments: Stripe hosted checkout links and subscription tables) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Key files:) Tj
+0 -14 Td
+(- expo/app/_layout.tsx: root providers, session restore, country access check, stack ) Tj
+0 -14 Td
+(routes) Tj
+0 -14 Td
+(- expo/constants/feature-keys.ts: feature flag key list including fertility_pathway, ) Tj
+0 -14 Td
+(cost_estimator, ivf_roadmap, doctor_questions) Tj
+0 -14 Td
+(- expo/lib/supabase.ts: Supabase client configuration) Tj
+0 -14 Td
+(- expo/lib/trpc.ts: tRPC client wiring) Tj
+0 -14 Td
+(- expo/store/user-store.ts: profile, session/user data, login/logout/register state) Tj
+0 -14 Td
+(- expo/store/feature-gate-store.ts: country feature flag loading) Tj
+0 -14 Td
+(- expo/utils/country-access.ts: country_access check on app launch) Tj
+0 -14 Td
+(- expo/utils/mixpanel.ts: analytics event transport) Tj
+0 -14 Td
+(- expo/docs/DEVELOPER-HANDOVER.md: existing long technical handover) Tj
+0 -14 Td
+(- expo/docs/AWS_MIGRATION_CHECKLIST.md: existing migration/compliance checklist) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(3. Feature List) Tj
+0 -14 Td
+(Core app features:) Tj
+0 -14 Td
+(- Login, registration, onboarding, reset password, consent management) Tj
+0 -14 Td
+(- Cycle dashboard, period/fertility calendar, daily log entry, daily check-in) Tj
+0 -14 Td
+(- Mood tracking, symptoms, flow, discharge, pain, cravings, sexual activity, lifestyle ) Tj
+0 -14 Td
+(notes) Tj
+0 -14 Td
+(- Insights, advanced analytics, cycle charts, mood charts, irregularity alerts) Tj
+0 -14 Td
+(- AI health chatbot, AI insights, AI mood forecast, prediction confidence badges) Tj
+0 -14 Td
+(- Data export, privacy policy, terms of service, help/support, reminders) Tj
+0 -14 Td
+(- Subscription/paywall, subscription management, redeem code flow) Tj
+0 -14 Td
+(- Telehealth screens: doctor directory, appointment booking, appointments, consultation ) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 2443 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(UI) Tj
+0 -14 Td
+(- Pregnancy/postpartum modules and stores) Tj
+0 -14 Td
+(- Partner sharing module, partner link, partner summary, education, relationship ) Tj
+0 -14 Td
+(dashboard) Tj
+0 -14 Td
+(- Emergency contacts and safety UI) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Fertility pathway features currently routed:) Tj
+0 -14 Td
+(- app/fertility-pathway.tsx: Fertility Pathway hub) Tj
+0 -14 Td
+(- app/cost-estimator.tsx: IVF/fertility treatment cost estimator) Tj
+0 -14 Td
+(- app/ivf-roadmap.tsx: IVF journey roadmap) Tj
+0 -14 Td
+(- app/doctor-questions.tsx: doctor question generator) Tj
+0 -14 Td
+(- app/fertility-predictions.tsx: fertility predictions) Tj
+0 -14 Td
+(- app/pcos-insights.tsx: PCOS insights) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Feature flag keys to manage from admin dashboard:) Tj
+0 -14 Td
+(- fertility_pathway) Tj
+0 -14 Td
+(- cost_estimator) Tj
+0 -14 Td
+(- ivf_roadmap) Tj
+0 -14 Td
+(- doctor_questions) Tj
+0 -14 Td
+(- fertility_predictions) Tj
+0 -14 Td
+(- pcos_insights) Tj
+0 -14 Td
+(- plus all core keys in constants/feature-keys.ts) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(4. Country Access and Feature Gating) Tj
+0 -14 Td
+(The app should not use separate admin UIs for feature control. Admin control is handled ) Tj
+0 -14 Td
+(externally through the country_feature_flags and country_access tables.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(country_access:) Tj
+0 -14 Td
+(Purpose: block/allow complete app access by country.) Tj
+0 -14 Td
+(Current app behavior:) Tj
+0 -14 Td
+(- Pre-login: app checks detected device country in app/_layout.tsx through ) Tj
+0 -14 Td
+(utils/country-access.ts) Tj
+0 -14 Td
+(- Post-login: app checks the user's profile country after session restore) Tj
+0 -14 Td
+(- No row means allowed) Tj
+0 -14 Td
+(- Row with is_enabled=false means blocked and shows CountryBlockedScreen) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(country_feature_flags:) Tj
+0 -14 Td
+(Purpose: enable/disable app features per country and access tier.) Tj
+0 -14 Td
+(Current app behavior:) Tj
+0 -14 Td
+(- Feature keys are defined in constants/feature-keys.ts) Tj
+0 -14 Td
+(- FeatureGate component can grey out or block disabled features) Tj
+0 -14 Td
+(- Admin dashboard manages rows externally) Tj
+0 -14 Td
+(- No separate mobile admin UI should be built) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Recommended feature rows:) Tj
+0 -14 Td
+(- AU / fertility_pathway / enabled true) Tj
+0 -14 Td
+(- AU / cost_estimator / enabled true) Tj
+0 -14 Td
+(- AU / ivf_roadmap / enabled true) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 1837 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(- AU / doctor_questions / enabled true) Tj
+0 -14 Td
+(- IN, PK, US, UK rows as needed by rollout policy) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(5. Database Tables and Data Ownership) Tj
+0 -14 Td
+(Main Supabase tables referenced by the code/docs:) Tj
+0 -14 Td
+(- users) Tj
+0 -14 Td
+(- symptom_logs) Tj
+0 -14 Td
+(- custom_symptoms) Tj
+0 -14 Td
+(- mood_logs) Tj
+0 -14 Td
+(- lifestyle_logs) Tj
+0 -14 Td
+(- predictions) Tj
+0 -14 Td
+(- ai_insights) Tj
+0 -14 Td
+(- ai_predictions) Tj
+0 -14 Td
+(- redemption_codes) Tj
+0 -14 Td
+(- subscriptions) Tj
+0 -14 Td
+(- subscription_orders) Tj
+0 -14 Td
+(- cancellation_requests) Tj
+0 -14 Td
+(- daily_checkins) Tj
+0 -14 Td
+(- sexual_activity_logs) Tj
+0 -14 Td
+(- partner_education_progress) Tj
+0 -14 Td
+(- reminder_preferences) Tj
+0 -14 Td
+(- country_feature_flags) Tj
+0 -14 Td
+(- country_access) Tj
+0 -14 Td
+(- ivf_cost_estimates) Tj
+0 -14 Td
+(- doctor_question_templates) Tj
+0 -14 Td
+(- user_feedback) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(New fertility/support tables:) Tj
+0 -14 Td
+(ivf_cost_estimates:) Tj
+0 -14 Td
+(- id uuid primary key) Tj
+0 -14 Td
+(- country_code text) Tj
+0 -14 Td
+(- treatment_type text, examples: ivf_standard, ivf_icsi, iui, egg_freezing) Tj
+0 -14 Td
+(- min_cost numeric) Tj
+0 -14 Td
+(- max_cost numeric) Tj
+0 -14 Td
+(- currency text) Tj
+0 -14 Td
+(- notes text nullable) Tj
+0 -14 Td
+(- source text nullable) Tj
+0 -14 Td
+(- is_active boolean) Tj
+0 -14 Td
+(- created_at timestamptz) Tj
+0 -14 Td
+(- updated_at timestamptz) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Admin purpose: seed AU, IN, PK, US, UK treatment cost ranges.) Tj
+0 -14 Td
+(Mobile purpose: cost-estimator screen reads active rows for the user's country.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(doctor_question_templates:) Tj
+0 -14 Td
+(- id uuid primary key) Tj
+0 -14 Td
+(- category text) Tj
+0 -14 Td
+(- treatment_type text nullable) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 2216 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(- country_code text nullable) Tj
+0 -14 Td
+(- question text) Tj
+0 -14 Td
+(- display_order integer) Tj
+0 -14 Td
+(- is_active boolean) Tj
+0 -14 Td
+(- created_at timestamptz) Tj
+0 -14 Td
+(- updated_at timestamptz) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Admin purpose: maintain reviewed fertility/IVF question templates.) Tj
+0 -14 Td
+(Mobile purpose: doctor-questions screen prefers DB templates and falls back to built-in ) Tj
+0 -14 Td
+(questions if empty.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(user_feedback:) Tj
+0 -14 Td
+(- id uuid primary key) Tj
+0 -14 Td
+(- user_id uuid/text nullable depending current schema) Tj
+0 -14 Td
+(- screen text nullable) Tj
+0 -14 Td
+(- feedback_type text) Tj
+0 -14 Td
+(- message text) Tj
+0 -14 Td
+(- metadata jsonb nullable) Tj
+0 -14 Td
+(- created_at timestamptz) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Admin purpose: view app/user feedback.) Tj
+0 -14 Td
+(Mobile purpose: ReportFeedback component inserts reports.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(No fertility_pathway_config table is needed. Use country_feature_flags with keys ) Tj
+0 -14 Td
+(fertility_pathway, cost_estimator, ivf_roadmap, doctor_questions.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(6. Authentication) Tj
+0 -14 Td
+(Provider: Supabase Auth.) Tj
+0 -14 Td
+(Supported flow:) Tj
+0 -14 Td
+(- App launch restores Supabase session with timeout) Tj
+0 -14 Td
+(- If session exists, fetch users row by auth_id) Tj
+0 -14 Td
+(- If onboarded, route to /\(tabs\)) Tj
+0 -14 Td
+(- If not onboarded, route to /onboarding) Tj
+0 -14 Td
+(- If no session, show /login) Tj
+0 -14 Td
+(- Logout calls Supabase signOut and clears local state) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Important file areas:) Tj
+0 -14 Td
+(- app/_layout.tsx: restore session and routing) Tj
+0 -14 Td
+(- app/login.tsx: email/password login) Tj
+0 -14 Td
+(- app/onboarding.tsx: registration/profile collection) Tj
+0 -14 Td
+(- app/reset-password.tsx: password reset) Tj
+0 -14 Td
+(- store/user-store.ts: user profile and auth-related state) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Known consideration: demo mode can create local-only user state. Server/database writes ) Tj
+0 -14 Td
+(must handle missing Supabase auth gracefully.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(7. AI Integrations) Tj
+0 -14 Td
+(Current AI capabilities:) Tj
+ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 2491 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(- AI Chatbot: conversational health assistant through tRPC ai.chat route and Rork ) Tj
+0 -14 Td
+(toolkit generation path) Tj
+0 -14 Td
+(- AI Insights / Predictions: cycle and fertility-related guidance/prediction logic) Tj
+0 -14 Td
+(- AI Mood Forecast: mood prediction timeline and explanations) Tj
+0 -14 Td
+(- Symptom Checker: guided symptom assessment with safety disclaimer patterns) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(AI guardrails implemented:) Tj
+0 -14 Td
+(- Medical disclaimers) Tj
+0 -14 Td
+(- Crisis/safety footer where applicable) Tj
+0 -14 Td
+(- Consent gate for AI processing) Tj
+0 -14 Td
+(- Safe fallback responses) Tj
+0 -14 Td
+(- Confidence badges) Tj
+0 -14 Td
+(- Input validation in backend routes) Tj
+0 -14 Td
+(- User-friendly failures instead of crashing) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Future AI scaling options:) Tj
+0 -14 Td
+(- Replace Rork toolkit calls with direct OpenAI, Vercel AI Gateway, or AWS Bedrock) Tj
+0 -14 Td
+(- Add server-side AI moderation/content filtering) Tj
+0 -14 Td
+(- Pin model versions) Tj
+0 -14 Td
+(- Add AI response audit logs) Tj
+0 -14 Td
+(- Add cost controls/rate limits) Tj
+0 -14 Td
+(- Add retrieval-augmented health knowledge base using OpenSearch/Pinecone plus a ) Tj
+0 -14 Td
+(reviewed medical content source) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(8. API / Backend Connections) Tj
+0 -14 Td
+(Current backend pattern:) Tj
+0 -14 Td
+(- Hono mounted under API routes) Tj
+0 -14 Td
+(- tRPC used for typed backend calls) Tj
+0 -14 Td
+(- React Query provider wraps the app) Tj
+0 -14 Td
+(- Supabase direct client access exists in several stores for database operations) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(External connections:) Tj
+0 -14 Td
+(- Supabase: auth + Postgres) Tj
+0 -14 Td
+(- Rork: project runtime/toolkit/API environment) Tj
+0 -14 Td
+(- Mixpanel: analytics event HTTP API) Tj
+0 -14 Td
+(- Stripe: hosted checkout/subscription data) Tj
+0 -14 Td
+(- Expo Notifications: local scheduled reminders and notification registration) Tj
+0 -14 Td
+(- Mail composer / clipboard / print / sharing where screens use Expo modules) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Configured environment variables visible in Rork:) Tj
+0 -14 Td
+(- EXPO_PUBLIC_SUPABASE_URL) Tj
+0 -14 Td
+(- EXPO_PUBLIC_SUPABASE_ANON_KEY) Tj
+0 -14 Td
+(- EXPO_PUBLIC_MIXPANEL_TOKEN) Tj
+0 -14 Td
+(- EXPO_PUBLIC_RORK_DB_ENDPOINT) Tj
+0 -14 Td
+(- EXPO_PUBLIC_RORK_DB_NAMESPACE) Tj
+0 -14 Td
+(- EXPO_PUBLIC_RORK_DB_TOKEN) Tj
+0 -14 Td
+(- EXPO_PUBLIC_RORK_AUTH_URL) Tj
+0 -14 Td
+(- EXPO_PUBLIC_RORK_API_BASE_URL) Tj
+ET
+endstream
+endobj
+14 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 15 0 R >>
+endobj
+15 0 obj
+<< /Length 2494 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(- EXPO_PUBLIC_TOOLKIT_URL) Tj
+0 -14 Td
+(- EXPO_PUBLIC_PROJECT_ID) Tj
+0 -14 Td
+(- EXPO_PUBLIC_TEAM_ID) Tj
+0 -14 Td
+(- Stripe Secret Key) Tj
+0 -14 Td
+(- Stripe Publishable Key) Tj
+0 -14 Td
+(- F365 test api) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Developer note: public Expo env vars are bundled into the client. Never put server-only ) Tj
+0 -14 Td
+(secrets in EXPO_PUBLIC variables.) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(9. Payments / Stripe) Tj
+0 -14 Td
+(Current approach:) Tj
+0 -14 Td
+(- Hosted Stripe checkout links rather than native embedded payments) Tj
+0 -14 Td
+(- Subscription tables exist for user subscription records, orders, cancellation ) Tj
+0 -14 Td
+(requests, refund fields) Tj
+0 -14 Td
+(- Subscription store manages local state and validation logic) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Production needs:) Tj
+0 -14 Td
+(- Stripe webhook handler for checkout/session/subscription events) Tj
+0 -14 Td
+(- Webhook signature verification) Tj
+0 -14 Td
+(- Server-side subscription status sync) Tj
+0 -14 Td
+(- Live price IDs/links when moving out of test mode) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(10. Analytics / Mixpanel) Tj
+0 -14 Td
+(Current approach:) Tj
+0 -14 Td
+(- Custom HTTP Mixpanel service in utils/mixpanel.ts) Tj
+0 -14 Td
+(- Tracks app opened, login/register/logout, profile updates, subscriptions and feature ) Tj
+0 -14 Td
+(usage events) Tj
+0 -14 Td
+(- User properties are set after login/register) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(Production needs:) Tj
+0 -14 Td
+(- Ensure token is sourced from EXPO_PUBLIC_MIXPANEL_TOKEN) Tj
+0 -14 Td
+(- Respect consent toggles) Tj
+0 -14 Td
+(- Avoid sending health detail content; track metadata/counts only) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(11. AWS / Future Scaling Migration) Tj
+0 -14 Td
+(Likely AWS target architecture:) Tj
+0 -14 Td
+(- Frontend: Expo app stays as-is) Tj
+0 -14 Td
+(- API: Hono/tRPC deployed to Lambda + API Gateway, or ECS if long-running server ) Tj
+0 -14 Td
+(preferred) Tj
+0 -14 Td
+(- Database: Supabase Postgres migrated to RDS PostgreSQL or Aurora Serverless) Tj
+0 -14 Td
+(- Auth: Supabase Auth migrated to Amazon Cognito) Tj
+0 -14 Td
+(- Secrets: AWS Secrets Manager and SSM Parameter Store) Tj
+0 -14 Td
+(- Encryption: KMS, RDS encryption, server-side AES-256-GCM for sensitive data) Tj
+0 -14 Td
+(- Logs: CloudWatch structured logs) Tj
+0 -14 Td
+(- Audit archive: S3 with lifecycle/retention policies) Tj
+0 -14 Td
+(- Push: SNS plus FCM/APNs if server-side push is required) Tj
+0 -14 Td
+(- WAF/Rate limit: AWS WAF + API Gateway throttling) Tj
+ET
+endstream
+endobj
+16 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 17 0 R >>
+endobj
+17 0 obj
+<< /Length 3150 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+() Tj
+0 -14 Td
+(Migration priority:) Tj
+0 -14 Td
+(1. Move hardcoded secrets/tokens to env/config where applicable) Tj
+0 -14 Td
+(2. Add backend auth middleware and server-side authorization) Tj
+0 -14 Td
+(3. Build Stripe webhook handler) Tj
+0 -14 Td
+(4. Verify delete/export covers all user tables) Tj
+0 -14 Td
+(5. Migrate database schema/data using pg_dump/pg_restore style process) Tj
+0 -14 Td
+(6. Replace Supabase Auth with Cognito if AWS-only target is required) Tj
+0 -14 Td
+(7. Replace direct Supabase client writes with API-layer writes) Tj
+0 -14 Td
+(8. Add monitoring, rate limiting, audit persistence, test coverage) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(12. Web Page / Website Connection Notes) Tj
+0 -14 Td
+(The app currently supports React Native Web preview through Expo/Rork. If connecting to ) Tj
+0 -14 Td
+(a marketing/admin web page:) Tj
+0 -14 Td
+(- Keep admin dashboard separate from mobile app) Tj
+0 -14 Td
+(- Admin dashboard should manage Supabase tables directly or via protected edge functions) Tj
+0 -14 Td
+(- Mobile app should only read feature flags and active public/reference rows) Tj
+0 -14 Td
+(- Do not expose service role keys to mobile or public web clients) Tj
+0 -14 Td
+(- Use edge functions/server API for admin mutations) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(13. Known Technical Debt / Developer Attention) Tj
+0 -14 Td
+(- Some docs mention older hardcoded credentials; verify current source before launch) Tj
+0 -14 Td
+(- Some pregnancy module screens may still be partial/stub-style compared with stores) Tj
+0 -14 Td
+(- Telehealth appears mock-data oriented unless connected to a real provider API) Tj
+0 -14 Td
+(- Stripe webhook is required for production-grade subscription status) Tj
+0 -14 Td
+(- AI moderation and audit logs are not yet production-grade) Tj
+0 -14 Td
+(- Supabase RLS must be reviewed for every new table) Tj
+0 -14 Td
+(- Rork toolkit calls need replacement if migrating fully away from Rork) Tj
+0 -14 Td
+(- Test coverage is limited or absent and should be added before scale) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(14. Handover Checklist for Developer) Tj
+0 -14 Td
+(- Read expo/docs/DEVELOPER-HANDOVER.md) Tj
+0 -14 Td
+(- Read expo/docs/AWS_MIGRATION_CHECKLIST.md) Tj
+0 -14 Td
+(- Read expo/docs/COUNTRY_FEATURE_FLAGS.md) Tj
+0 -14 Td
+(- Read expo/docs/EMAIL_ENCRYPTION.md) Tj
+0 -14 Td
+(- Review app/_layout.tsx session and country access logic) Tj
+0 -14 Td
+(- Review constants/feature-keys.ts for all feature flags) Tj
+0 -14 Td
+(- Review lib/supabase.ts and all store imports of supabase) Tj
+0 -14 Td
+(- Confirm Supabase schemas for ivf_cost_estimates, doctor_question_templates, ) Tj
+0 -14 Td
+(user_feedback, country_feature_flags, country_access) Tj
+0 -14 Td
+(- Seed ivf_cost_estimates for AU, IN, PK, US, UK) Tj
+0 -14 Td
+(- Seed doctor_question_templates) Tj
+0 -14 Td
+(- Configure country_feature_flags by country; do not create fertility_pathway_config) Tj
+0 -14 Td
+(- Verify user_feedback insert works from ReportFeedback) Tj
+0 -14 Td
+(- Verify app behavior in Expo web preview and on Expo Go) Tj
+0 -14 Td
+() Tj
+0 -14 Td
+(15. Suggested Rork Prompt for Future Technical Extraction) Tj
+0 -14 Td
+(Ask Rork:) Tj
+ET
+endstream
+endobj
+18 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 19 0 R >>
+endobj
+19 0 obj
+<< /Length 594 >>
+stream
+BT
+/F1 10 Tf
+54 738 Td
+(Please audit this Rork Expo project and generate a developer handover covering: all ) Tj
+0 -14 Td
+(screens/features, database tables and fields, Supabase auth/database usage, ) Tj
+0 -14 Td
+(country_feature_flags and country_access logic, AI integrations, Stripe/payment flow, ) Tj
+0 -14 Td
+(Mixpanel analytics, environment variables, Rork-specific dependencies, API/backend ) Tj
+0 -14 Td
+(routes, AWS migration path, scaling risks, and production readiness checklist. Include ) Tj
+0 -14 Td
+(exact file paths and mark what is implemented vs pending.) Tj
+0 -14 Td
+() Tj
+ET
+endstream
+endobj
+xref
+0 20
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000162 00000 n 
+0000000232 00000 n 
+0000000358 00000 n 
+0000003526 00000 n 
+0000003652 00000 n 
+0000006147 00000 n 
+0000006273 00000 n 
+0000008162 00000 n 
+0000008290 00000 n 
+0000010559 00000 n 
+0000010687 00000 n 
+0000013231 00000 n 
+0000013359 00000 n 
+0000015906 00000 n 
+0000016034 00000 n 
+0000019237 00000 n 
+0000019365 00000 n 
+trailer
+<< /Size 20 /Root 1 0 R >>
+startxref
+20011
+%%EOF

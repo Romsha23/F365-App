@@ -1,0 +1,13 @@
+# Stripe sends stripe-signature only — no Supabase JWT. Security is via STRIPE_WEBHOOK_SECRET in the handler.
+[functions.stripe-billing-webhook]
+verify_jwt = false
+
+# Auth functions called before the user is authenticated
+[functions.signin]
+verify_jwt = false
+
+[functions.process-signup]
+verify_jwt = false
+
+[functions.get-profile]
+verify_jwt = false

@@ -1,0 +1,7 @@
+ALTER TABLE public.country_feature_flags
+ADD COLUMN IF NOT EXISTS access_tier TEXT NOT NULL DEFAULT 'all',
+ADD COLUMN IF NOT EXISTS reason TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS updated_by TEXT DEFAULT '';
+
+ALTER TABLE public.country_access
+ADD COLUMN IF NOT EXISTS updated_by TEXT DEFAULT '';

@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>F365 — AWS Migration Solution Design</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#11172e; --ink:#e7ecff; --muted:#9aa6c7;
+    --aws:#ff9900; --aws-ink:#232f3e;
+    --supa:#3ecf8e; --stripe:#635bff; --rc:#ff5a5f;
+    --line:#2a335a; --accent:#7aa2ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#1a2350 0%,transparent 60%),radial-gradient(900px 500px at 110% 10%,#2a1a4a 0%,transparent 55%),var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 24px 96px}
+  header{display:flex;flex-direction:column;gap:12px;margin-bottom:32px}
+  .eyebrow{color:var(--accent);font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+  h1{font-size:42px;line-height:1.05;margin:0;font-weight:800;letter-spacing:-0.02em}
+  h2{font-size:22px;margin:36px 0 14px;letter-spacing:-0.01em}
+  h3{font-size:16px;margin:18px 0 8px;color:var(--ink)}
+  p,li{color:var(--muted);line-height:1.6}
+  .sub{color:var(--muted);max-width:780px}
+  .grid{display:grid;gap:16px}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  @media (max-width:860px){.cols-3,.cols-2{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:16px;padding:18px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(122,162,255,.12);color:var(--accent);border:1px solid rgba(122,162,255,.25)}
+  .tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .tag.aws{background:rgba(255,153,0,.15);color:#ffb84d;border:1px solid rgba(255,153,0,.4)}
+  .tag.supa{background:rgba(62,207,142,.12);color:#7be3b3;border:1px solid rgba(62,207,142,.4)}
+  .tag.ext{background:rgba(122,162,255,.12);color:#a9c0ff;border:1px solid rgba(122,162,255,.35)}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 4px}
+  .diagram{background:#0c1330;border:1px solid var(--line);border-radius:20px;padding:20px;overflow:auto}
+  svg{display:block;width:100%;height:auto;min-width:880px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink)}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  tr:last-child td{border-bottom:none}
+  .stack{display:flex;gap:8px;flex-wrap:wrap}
+  ul{padding-left:18px;margin:6px 0}
+  .footer{margin-top:48px;color:var(--muted);font-size:13px;text-align:center}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0a0f24;border:1px solid var(--line);padding:2px 6px;border-radius:6px;font-size:12px;color:#c8d2f5}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Solution Design · v1.0</span>
+  <h1>F365 — Hybrid AWS + Supabase Architecture</h1>
+  <p class="sub">Front-end web, marketing site, email and operational workloads run on AWS. Application database, auth and Edge Functions remain on Supabase. This document is the canonical reference for the migration.</p>
+  <div class="legend">
+    <span class="tag aws">AWS</span>
+    <span class="tag supa">Supabase</span>
+    <span class="tag ext">3rd Party</span>
+  </div>
+</header>
+
+<section>
+  <h2>1. High-Level Architecture</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7aa2ff"/>
+        </marker>
+        <linearGradient id="awsBox" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#1d2547"/><stop offset="1" stop-color="#13193a"/>
+        </linearGradient>
+        <linearGradient id="supaBox" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#143028"/><stop offset="1" stop-color="#0f2420"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Clients -->
+      <g>
+        <rect x="40" y="30" width="220" height="80" rx="14" fill="#11172e" stroke="#2a335a"/>
+        <text x="150" y="60" fill="#e7ecff" font-size="14" font-weight="700" text-anchor="middle">Mobile App (iOS/Android)</text>
+        <text x="150" y="82" fill="#9aa6c7" font-size="12" text-anchor="middle">Expo / React Native</text>
+        <text x="150" y="98" fill="#9aa6c7" font-size="12" text-anchor="middle">App Store · Play Store</text>
+
+        <rect x="290" y="30" width="220" height="80" rx="14" fill="#11172e" stroke="#2a335a"/>
+        <text x="400" y="60" fill="#e7ecff" font-size="14" font-weight="700" text-anchor="middle">Marketing Website</text>
+        <text x="400" y="82" fill="#9aa6c7" font-size="12" text-anchor="middle">Next.js / Static</text>
+        <text x="400" y="98" fill="#9aa6c7" font-size="12" text-anchor="middle">CloudFront + S3</text>
+
+        <rect x="540" y="30" width="220" height="80" rx="14" fill="#11172e" stroke="#2a335a"/>
+        <text x="650" y="60" fill="#e7ecff" font-size="14" font-weight="700" text-anchor="middle">Admin / Web App</text>
+        <text x="650" y="82" fill="#9aa6c7" font-size="12" text-anchor="middle">Operator dashboard</text>
+        <text x="650" y="98" fill="#9aa6c7" font-size="12" text-anchor="middle">Amplify Hosting</text>
+      </g>
+
+      <!-- Edge / API Layer -->
+      <g>
+        <rect x="40" y="160" width="720" height="120" rx="16" fill="url(#awsBox)" stroke="#ff9900" stroke-opacity=".5"/>
+        <text x="60" y="184" fill="#ffb84d" font-size="12" font-weight="800" letter-spacing="2">AWS — EDGE & API</text>
+
+        <rect x="60" y="200" width="200" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="160" y="226" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">CloudFront (CDN)</text>
+        <text x="160" y="244" fill="#9aa6c7" font-size="11" text-anchor="middle">WAF · ACM TLS · Shield</text>
+
+        <rect x="280" y="200" width="200" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="380" y="226" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">API Gateway</text>
+        <text x="380" y="244" fill="#9aa6c7" font-size="11" text-anchor="middle">REST · HTTPS · Cognito JWT</text>
+
+        <rect x="500" y="200" width="240" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="620" y="226" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Lambda (Node/TS)</text>
+        <text x="620" y="244" fill="#9aa6c7" font-size="11" text-anchor="middle">webhooks · email · reports · ops</text>
+      </g>
+
+      <!-- AWS Services -->
+      <g>
+        <rect x="40" y="310" width="720" height="180" rx="16" fill="url(#awsBox)" stroke="#ff9900" stroke-opacity=".5"/>
+        <text x="60" y="334" fill="#ffb84d" font-size="12" font-weight="800" letter-spacing="2">AWS — APPLICATION SERVICES</text>
+
+        <rect x="60" y="350" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="140" y="376" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">SES</text>
+        <text x="140" y="394" fill="#9aa6c7" font-size="11" text-anchor="middle">Transactional email</text>
+
+        <rect x="240" y="350" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="320" y="376" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">S3</text>
+        <text x="320" y="394" fill="#9aa6c7" font-size="11" text-anchor="middle">Assets · exports · backups</text>
+
+        <rect x="420" y="350" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="500" y="376" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">EventBridge</text>
+        <text x="500" y="394" fill="#9aa6c7" font-size="11" text-anchor="middle">Schedules · async events</text>
+
+        <rect x="600" y="350" width="140" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="670" y="376" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">SQS / SNS</text>
+        <text x="670" y="394" fill="#9aa6c7" font-size="11" text-anchor="middle">Queues · fan-out</text>
+
+        <rect x="60" y="420" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="140" y="446" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Cognito</text>
+        <text x="140" y="464" fill="#9aa6c7" font-size="11" text-anchor="middle">Admin/web SSO</text>
+
+        <rect x="240" y="420" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="320" y="446" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Secrets Mgr / KMS</text>
+        <text x="320" y="464" fill="#9aa6c7" font-size="11" text-anchor="middle">Keys · rotation</text>
+
+        <rect x="420" y="420" width="160" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="500" y="446" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">CloudWatch</text>
+        <text x="500" y="464" fill="#9aa6c7" font-size="11" text-anchor="middle">Logs · metrics · alarms</text>
+
+        <rect x="600" y="420" width="140" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="670" y="446" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Route 53</text>
+        <text x="670" y="464" fill="#9aa6c7" font-size="11" text-anchor="middle">DNS</text>
+      </g>
+
+      <!-- Supabase -->
+      <g>
+        <rect x="800" y="160" width="260" height="330" rx="16" fill="url(#supaBox)" stroke="#3ecf8e" stroke-opacity=".55"/>
+        <text x="820" y="184" fill="#7be3b3" font-size="12" font-weight="800" letter-spacing="2">SUPABASE — DATA PLANE</text>
+
+        <rect x="820" y="200" width="220" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="930" y="226" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Postgres</text>
+        <text x="930" y="244" fill="#9aa6c7" font-size="11" text-anchor="middle">RLS · pgvector · backups</text>
+
+        <rect x="820" y="270" width="220" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="930" y="296" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Supabase Auth</text>
+        <text x="930" y="314" fill="#9aa6c7" font-size="11" text-anchor="middle">App users · JWT</text>
+
+        <rect x="820" y="340" width="220" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="930" y="366" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Edge Functions</text>
+        <text x="930" y="384" fill="#9aa6c7" font-size="11" text-anchor="middle">AI · realtime triggers</text>
+
+        <rect x="820" y="410" width="220" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="930" y="436" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Storage</text>
+        <text x="930" y="454" fill="#9aa6c7" font-size="11" text-anchor="middle">User-generated media</text>
+      </g>
+
+      <!-- 3rd party -->
+      <g>
+        <rect x="40" y="520" width="1020" height="120" rx="16" fill="#11172e" stroke="#2a335a"/>
+        <text x="60" y="544" fill="#a9c0ff" font-size="12" font-weight="800" letter-spacing="2">3RD PARTY INTEGRATIONS</text>
+
+        <rect x="60" y="560" width="180" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="150" y="586" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Stripe</text>
+        <text x="150" y="604" fill="#9aa6c7" font-size="11" text-anchor="middle">Payments · webhooks</text>
+
+        <rect x="260" y="560" width="180" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="350" y="586" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">RevenueCat</text>
+        <text x="350" y="604" fill="#9aa6c7" font-size="11" text-anchor="middle">Subscriptions (iOS/Android)</text>
+
+        <rect x="460" y="560" width="180" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="550" y="586" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">OpenAI / LLM</text>
+        <text x="550" y="604" fill="#9aa6c7" font-size="11" text-anchor="middle">AI features</text>
+
+        <rect x="660" y="560" width="180" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="750" y="586" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Mixpanel</text>
+        <text x="750" y="604" fill="#9aa6c7" font-size="11" text-anchor="middle">Product analytics</text>
+
+        <rect x="860" y="560" width="200" height="60" rx="10" fill="#0c1330" stroke="#2a335a"/>
+        <text x="960" y="586" fill="#e7ecff" font-size="13" font-weight="700" text-anchor="middle">Sentry · APNs · FCM</text>
+        <text x="960" y="604" fill="#9aa6c7" font-size="11" text-anchor="middle">Crash reporting · push</text>
+      </g>
+
+      <!-- Arrows -->
+      <g stroke="#7aa2ff" stroke-width="1.6" fill="none" marker-end="url(#arr)">
+        <path d="M150,110 L150,160"/>
+        <path d="M400,110 L400,160"/>
+        <path d="M650,110 L650,160"/>
+        <path d="M380,260 L380,310"/>
+        <path d="M620,260 L780,260"/>
+        <path d="M260,230 L280,230"/>
+        <path d="M740,230 L800,230"/>
+        <path d="M150,490 L150,520"/>
+        <path d="M620,490 L620,520"/>
+        <path d="M930,490 L930,520"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2>2. Component Responsibilities</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <span class="tag aws">AWS</span>
+      <h3>Edge & API</h3>
+      <ul>
+        <li><b>CloudFront + WAF + ACM</b> — global CDN, TLS, OWASP rules.</li>
+        <li><b>API Gateway</b> — public REST endpoints; JWT auth via Cognito (admin) or Supabase (app).</li>
+        <li><b>Lambda</b> — Stripe webhooks, email orchestration, scheduled reports, ops.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag aws">AWS</span>
+      <h3>Web Hosting</h3>
+      <ul>
+        <li><b>Amplify Hosting / S3 + CloudFront</b> — marketing site & admin dashboard.</li>
+        <li><b>Route 53</b> — DNS for app, www, api, admin.</li>
+        <li><b>S3</b> — exports, backup snapshots, static assets.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag aws">AWS</span>
+      <h3>Email & Messaging</h3>
+      <ul>
+        <li><b>SES</b> — transactional + drip emails, DKIM, SPF, DMARC.</li>
+        <li><b>EventBridge</b> — cron schedules for digests/reminders.</li>
+        <li><b>SQS / SNS</b> — async queues, retries, fan-out to email/push.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag aws">AWS</span>
+      <h3>Security & Ops</h3>
+      <ul>
+        <li><b>Cognito</b> — staff SSO for admin tools.</li>
+        <li><b>Secrets Manager + KMS</b> — Supabase service key, Stripe key, OpenAI key.</li>
+        <li><b>CloudWatch</b> — logs, metrics, alarms; <b>Sentry</b> for crash.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag supa">Supabase</span>
+      <h3>Data Plane (kept)</h3>
+      <ul>
+        <li><b>Postgres</b> with RLS — application database (users, cycles, IVF, etc.).</li>
+        <li><b>Auth</b> — mobile app users (email, OTP, social).</li>
+        <li><b>Edge Functions</b> — AI chat, fertility predictions, realtime triggers.</li>
+        <li><b>Storage</b> — user-uploaded media.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="tag ext">3rd Party</span>
+      <h3>External Integrations</h3>
+      <ul>
+        <li><b>Stripe</b> — web checkout & invoicing; webhook → Lambda → Supabase.</li>
+        <li><b>RevenueCat</b> — iOS/Android subscriptions; webhook → Lambda.</li>
+        <li><b>OpenAI</b> — called from Supabase Edge Functions.</li>
+        <li><b>Mixpanel · Sentry · APNs/FCM</b>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3. What Moves Where</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead><tr><th>Workload</th><th>Today</th><th>Target</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>App database</td><td>Supabase</td><td><span class="tag supa">Supabase</span></td><td>No change. Enable PITR + cross-region backup to S3.</td></tr>
+        <tr><td>App user auth</td><td>Supabase Auth</td><td><span class="tag supa">Supabase</span></td><td>JWT validated by API Gateway authorizer when needed.</td></tr>
+        <tr><td>Edge functions / AI</td><td>Supabase</td><td><span class="tag supa">Supabase</span></td><td>Stay close to data; called from app and from Lambda.</td></tr>
+        <tr><td>Marketing website</td><td>—</td><td><span class="tag aws">S3 + CloudFront</span></td><td>Static export, ACM cert, WAF.</td></tr>
+        <tr><td>Admin dashboard</td><td>—</td><td><span class="tag aws">Amplify + Cognito</span></td><td>Staff-only, MFA enforced.</td></tr>
+        <tr><td>Transactional email</td><td>—</td><td><span class="tag aws">SES</span></td><td>Templates managed in code; sends via Lambda.</td></tr>
+        <tr><td>Stripe webhooks</td><td>—</td><td><span class="tag aws">API GW + Lambda</span></td><td>Idempotent writes to Supabase via service role.</td></tr>
+        <tr><td>RevenueCat webhooks</td><td>—</td><td><span class="tag aws">API GW + Lambda</span></td><td>Updates entitlement table in Supabase.</td></tr>
+        <tr><td>Schedules / digests</td><td>—</td><td><span class="tag aws">EventBridge + Lambda</span></td><td>Daily/weekly jobs.</td></tr>
+        <tr><td>Secrets</td><td>.env</td><td><span class="tag aws">Secrets Manager</span></td><td>Rotated; injected into Lambda at runtime.</td></tr>
+        <tr><td>Observability</td><td>Mixed</td><td><span class="tag aws">CloudWatch + Sentry</span></td><td>Single pane for AWS; Sentry for client crashes.</td></tr>
+        <tr><td>Mobile app</td><td>Expo</td><td>Unchanged</td><td>Talks to Supabase + AWS API Gateway.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>4. Key Data Flows</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <h3>App → Data</h3>
+      <p>Mobile app authenticates with Supabase Auth, reads/writes Postgres directly with RLS, and invokes Supabase Edge Functions for AI features.</p>
+    </div>
+    <div class="card">
+      <h3>Stripe / RevenueCat → Entitlements</h3>
+      <p>Provider posts webhook → CloudFront → API Gateway → Lambda verifies signature → writes entitlement row in Supabase via service key (in Secrets Manager).</p>
+    </div>
+    <div class="card">
+      <h3>Email Lifecycle</h3>
+      <p>EventBridge cron / Supabase trigger → SQS → Lambda renders template → SES sends → bounce/complaint topic → CloudWatch alarm.</p>
+    </div>
+    <div class="card">
+      <h3>Admin Dashboard</h3>
+      <p>Staff sign in to Cognito (MFA) → Amplify-hosted SPA → API Gateway (Cognito authorizer) → Lambda → read-only views of Supabase + ops actions.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>5. Environments & Networking</h2>
+  <div class="grid cols-3">
+    <div class="card"><span class="pill">dev</span><p>Isolated AWS account, Supabase dev project, test Stripe & RevenueCat sandbox.</p></div>
+    <div class="card"><span class="pill">staging</span><p>Mirror of prod; used for release candidates and end-to-end tests.</p></div>
+    <div class="card"><span class="pill">prod</span><p>Hardened account, WAF + Shield, daily PITR, paging on alarms.</p></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h3>DNS</h3>
+    <ul>
+      <li><span class="kbd">app.f365.com</span> → mobile API gateway (optional custom domain)</li>
+      <li><span class="kbd">www.f365.com</span> → CloudFront → S3 (marketing)</li>
+      <li><span class="kbd">admin.f365.com</span> → Amplify (admin)</li>
+      <li><span class="kbd">api.f365.com</span> → API Gateway (webhooks, ops)</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>6. Security Controls</h2>
+  <div class="grid cols-2">
+    <div class="card">
+      <h3>Identity</h3>
+      <ul>
+        <li>Supabase Auth for end users; Cognito for staff with MFA.</li>
+        <li>Least-privilege IAM roles per Lambda; no long-lived keys.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Data</h3>
+      <ul>
+        <li>Postgres RLS enforced for every user-scoped table.</li>
+        <li>S3 buckets private + SSE-KMS; signed URLs for downloads.</li>
+        <li>Daily PITR snapshots replicated to S3 (cross-region).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Edge</h3>
+      <ul>
+        <li>WAF managed rule sets, rate limiting, geo controls.</li>
+        <li>ACM TLS 1.2+; HSTS on web origins.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Secrets</h3>
+      <ul>
+        <li>Secrets Manager with KMS CMKs; auto-rotation where supported.</li>
+        <li>No secrets in client bundles or repo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>7. Migration Phases</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead><tr><th>Phase</th><th>Scope</th><th>Exit Criteria</th></tr></thead>
+      <tbody>
+        <tr><td>0 — Foundation</td><td>AWS Org, accounts, Route 53, KMS, Secrets Manager, CI/CD (GitHub Actions → AWS OIDC)</td><td>IaC (Terraform/CDK) deploys an empty stack to dev/staging/prod</td></tr>
+        <tr><td>1 — Web & Email</td><td>Marketing site on S3+CloudFront; SES domain verified; transactional templates</td><td>Live www domain, first email delivered, DMARC pass</td></tr>
+        <tr><td>2 — API & Webhooks</td><td>API Gateway + Lambda; Stripe & RevenueCat webhooks; Secrets wired</td><td>End-to-end test purchase updates Supabase entitlement</td></tr>
+        <tr><td>3 — Admin & Ops</td><td>Cognito, Amplify admin dashboard, EventBridge schedules, CloudWatch alarms</td><td>Staff can sign in; daily digest job runs in prod</td></tr>
+        <tr><td>4 — Hardening</td><td>WAF rules, load test, DR drill, runbooks</td><td>RTO ≤ 1h, RPO ≤ 15m demonstrated</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>8. Risks & Mitigations</h2>
+  <div class="grid cols-2">
+    <div class="card"><h3>Cross-cloud latency</h3><p>Lambdas in same region as Supabase project; cache reads in CloudFront where safe.</p></div>
+    <div class="card"><h3>Secret sprawl</h3><p>Single source: AWS Secrets Manager; Supabase uses Vault for its own keys only.</p></div>
+    <div class="card"><h3>Webhook replay / loss</h3><p>API Gateway → SQS → Lambda with idempotency keys and DLQ.</p></div>
+    <div class="card"><h3>Email deliverability</h3><p>Warm SES domain, monitor bounces &lt; 5%, complaints &lt; 0.1%.</p></div>
+  </div>
+</section>
+
+<p class="footer">F365 — AWS + Supabase hybrid · Solution Design v1.0</p>
+</div>
+</body>
+</html>

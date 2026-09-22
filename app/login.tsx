@@ -855,14 +855,8 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={
-        Platform.OS === 'ios'
-          ? 'padding'
-          : 'height'
-      }
-      keyboardVerticalOffset={
-        Platform.OS === 'ios' ? 64 : 0
-      }
+      behavior='padding'
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 24}
     >
       <Stack.Screen
         options={{
@@ -1385,6 +1379,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     paddingTop: 60,
+    paddingBottom: 120,
   },
 
   header: {

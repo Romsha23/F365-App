@@ -75,6 +75,17 @@ export default function AIChatbotScreen() {
     }, 100);
   }, [messages.length]);
 
+  // Scroll to end when keyboard appears
+  useEffect(() => {
+    const { Keyboard } = require('react-native');
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    });
+    return () => sub.remove();
+  }, []);
+
   if (!hasPremium) {
     return (
       <View style={styles.container}>
@@ -289,8 +300,8 @@ Remember: You're a health assistant, not a replacement for medical care. Always 
       
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 80}
       >
         <ScrollView
           ref={scrollViewRef}

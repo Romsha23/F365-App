@@ -197,6 +197,7 @@ function AppInitializer({ children }: { children: ReactNode }) {
               role: 'user',
               onboarded: p.onboarded ?? false,
               lifeStage: p.life_stage,
+              ageGroup: p.age_group || undefined,
             });
             
             validateSubscription(session.user.id).catch(err => {
@@ -290,6 +291,7 @@ function AppInitializer({ children }: { children: ReactNode }) {
               role: 'user',
               onboarded: p.onboarded ?? false,
               lifeStage: p.life_stage,
+              ageGroup: p.age_group || undefined,
             });
 
             if (p.onboarded) {

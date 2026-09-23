@@ -212,6 +212,7 @@ export default function LoginScreen() {
           role: 'user',
           onboarded: p.onboarded ?? false,
           lifeStage: p.life_stage,
+          ageGroup: p.age_group || undefined,
         };
 
         await register(userProfile);

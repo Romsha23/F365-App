@@ -11,6 +11,7 @@ import Colors from '../constants/colors';
 import { generateInitialCycleData } from '../utils/mock-data';
 import { generateQuickCoolName } from '../utils/display-name-generator';
 import { ChevronDown, Eye, EyeOff, Calendar, Check } from 'lucide-react-native';
+import { calculateAge } from '../utils/age-gate';
 import { CountryPicker } from '../components/CountryPicker';
 import { useFeatureGateStore } from '../store/feature-gate-store';
 import { ConsentCheckbox } from '../components/DisclaimerBanner';
@@ -153,6 +154,15 @@ export default function OnboardingScreen() {
     } else if (currentStepType === 'basicInfo') {
       if (!birthMonth || !birthYear) {
         Alert.alert('Required', 'Please select your birth month and year');
+        return;
+      }
+      const _age = calculateAge(parseInt(birthMonth), parseInt(birthYear));
+      if (_age !== undefined && _age < 18) {
+        Alert.alert(
+          'Age Requirement',
+          'f365 is designed for users aged 18 and above. You must be at least 18 years old to continue.',
+          [{ text: 'OK', style: 'default' }]
+        );
         return;
       }
     } else if (currentStepType === 'lifestyle') {

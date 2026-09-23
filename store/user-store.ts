@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calculateAge, getAgeGroup } from '../utils/age-gate';
 import { UserProfile, generate7DigitId } from '../types/user';
 import { logDataUpdate } from '../utils/audit-logger';
 import { mixpanel, MixpanelEvents, MixpanelUserProperties } from '../utils/mixpanel';
@@ -112,6 +113,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
           role: 'user',
           onboarded: p.onboarded ?? false,
           lifeStage: p.life_stage,
+          ageGroup: p.age_group || undefined,
         };
         
         mixpanel.identify(userProfile.uniqueId);
@@ -193,6 +195,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
         email: userData.email,
         birthMonth: userData.birthMonth,
         birthYear: userData.birthYear,
+        ageGroup: userData.ageGroup,
         role: userData.role ?? 'user',
         country: userData.country,
         ethnicity: userData.ethnicity,
@@ -219,12 +222,15 @@ export const useUserStore = create<UserState>()((set, get) => ({
       const authId = get().authId;
       const isDemoMode = get().isDemoMode;
       if (authId && !isDemoMode) {
+        const _ageForStore = calculateAge(userProfile.birthMonth, userProfile.birthYear);
+        const _ageGroupForStore = getAgeGroup(_ageForStore);
         const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
             id: authId,
             onboarded: userProfile.onboarded,
             life_stage: userProfile.lifeStage,
+            age_group: _ageGroupForStore,
           }, {
             onConflict: 'id',
           });
@@ -281,6 +287,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
               role: 'user',
               onboarded: p.onboarded ?? false,
               lifeStage: p.life_stage,
+          ageGroup: p.age_group || undefined,
             };
             set({ user: currentUser });
             console.log('[updateProfile] User recovered from profile');
@@ -301,12 +308,15 @@ export const useUserStore = create<UserState>()((set, get) => ({
       const isDemoMode = get().isDemoMode;
       
       if (authId && !isDemoMode) {
+        const _ageForUpdate = calculateAge(updatedUser.birthMonth, updatedUser.birthYear);
+        const _ageGroupForUpdate = getAgeGroup(_ageForUpdate);
         const { error: updateError } = await supabase
           .from('profiles')
           .upsert({
             id: authId,
             onboarded: updatedUser.onboarded,
             life_stage: updatedUser.lifeStage,
+            age_group: _ageGroupForUpdate,
           }, {
             onConflict: 'id',
           });

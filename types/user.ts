@@ -137,6 +137,7 @@ export interface UserProfile {
   insightsEnabled?: boolean;
   onboarded?: boolean;
   consentGiven?: boolean;
+  ageGroup?: string; // Persisted age group from DB — 'teen' | 'young_adult' | 'adult' | 'mature'
   aiProcessingConsent?: boolean;
   aiConsentDate?: string;
   lastDataExport?: string;

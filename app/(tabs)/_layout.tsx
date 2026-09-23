@@ -66,6 +66,7 @@ export default function TabLayout() {
               role: 'user',
               onboarded: p.onboarded ?? false,
               lifeStage: p.life_stage,
+              ageGroup: p.age_group || undefined,
             });
             if (!p.onboarded) {
               router.replace('/onboarding');

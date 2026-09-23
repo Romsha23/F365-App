@@ -37,10 +37,15 @@ export function getAgeGroup(age: number | undefined): AgeGroup {
 export function getAgeGateResult(
   birthMonth?: number,
   birthYear?: number,
-  lifeStage?: LifeStage
+  lifeStage?: LifeStage,
+  storedAgeGroup?: string
 ): AgeGateResult {
   const age = calculateAge(birthMonth, birthYear);
-  const ageGroup = getAgeGroup(age);
+  // Use live age group if birth data available; else fall back to DB-persisted age_group
+  const computedGroup = getAgeGroup(age);
+  const ageGroup: AgeGroup = (computedGroup !== 'adult' || !storedAgeGroup)
+    ? computedGroup
+    : (storedAgeGroup as AgeGroup);
   const isTeen = ageGroup === 'teen';
 
   const isLifeStageAdult = lifeStage === 'trying_to_conceive' || lifeStage === 'pregnant' || lifeStage === 'postpartum';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useCycleStore } from '../../store/cycle-store';
 import { useUserStore } from '../../store/user-store';
@@ -149,6 +149,11 @@ const HealthAssistantChat = ({ isPro }: { isPro: boolean }) => {
   };
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 60}
+    >
     <View style={chatStyles.container}>
       <ScrollView
         ref={scrollViewRef}
@@ -231,6 +236,7 @@ const HealthAssistantChat = ({ isPro }: { isPro: boolean }) => {
         Always consult a healthcare provider for medical concerns.
       </Text>
     </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -955,6 +961,7 @@ const chatStyles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
+    paddingBottom: Platform.OS === 'android' ? 12 : 12,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     backgroundColor: Colors.card,

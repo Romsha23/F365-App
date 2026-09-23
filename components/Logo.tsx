@@ -60,5 +60,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     fontWeight: '600' as const,
     letterSpacing: 0.5,
+    flexShrink: 0,
   },
 });

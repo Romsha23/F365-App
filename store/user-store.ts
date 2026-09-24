@@ -1,11 +1,11 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { calculateAge, getAgeGroup } from '../utils/age-gate';
 import { UserProfile, generate7DigitId } from '../types/user';
 import { logDataUpdate } from '../utils/audit-logger';
 import { mixpanel, MixpanelEvents, MixpanelUserProperties } from '../utils/mixpanel';
 import { supabase } from '../lib/supabase';
 import { generateAICoolName, generateQuickCoolName } from '../utils/display-name-generator';
+import { encodeBirthData } from '../utils/birth-crypto';
 
 
 const AUTH_ID_STORAGE_KEY = 'flo365-auth-id';
@@ -107,13 +107,12 @@ export const useUserStore = create<UserState>()((set, get) => ({
         const p = profileData.profile;
         const userProfile: UserProfile = {
           id: p.id,
-          uniqueId: fnData.profile.id,
+          uniqueId: p.unique_id || generate7DigitId(),
           displayName: p.username || undefined,
           email: p.email || undefined,
           role: 'user',
           onboarded: p.onboarded ?? false,
           lifeStage: p.life_stage,
-          ageGroup: p.age_group || undefined,
         };
         
         mixpanel.identify(userProfile.uniqueId);
@@ -124,6 +123,15 @@ export const useUserStore = create<UserState>()((set, get) => ({
         });
         
         set({ user: userProfile, isLoading: false });
+
+        // Restore subscription from Supabase immediately after login
+        // so the UI reflects Pro status without waiting for _layout.tsx
+        try {
+          const { useSubscriptionStore } = await import('../store/subscription-store');
+          await useSubscriptionStore.getState().validateSubscription(fnData.profile.id);
+        } catch (subErr) {
+          console.warn('[UserStore] Post-login subscription validation failed:', subErr);
+        }
       } else {
         set({ isLoading: false });
       }
@@ -179,7 +187,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
             set({ user: { ...current, displayName: aiName } });
             console.log('[UserStore] AI-generated display name set:', aiName);
           } else {
-            console.log('[UserStore] Skipping AI name — user already has a different name');
+            console.log('[UserStore] Skipping AI name â€” user already has a different name');
           }
         }).catch(err => {
           console.warn('[UserStore] AI name gen failed, keeping fallback:', err);
@@ -188,6 +196,10 @@ export const useUserStore = create<UserState>()((set, get) => ({
         console.log('[UserStore] Using existing display name:', coolName);
       }
       
+      const birthToken = (userData.birthMonth && userData.birthYear)
+        ? encodeBirthData(userData.birthMonth, userData.birthYear)
+        : userData.birthToken;
+
       const userProfile: UserProfile = {
         id: userData.id || uniqueId,
         uniqueId: uniqueId,
@@ -195,7 +207,7 @@ export const useUserStore = create<UserState>()((set, get) => ({
         email: userData.email,
         birthMonth: userData.birthMonth,
         birthYear: userData.birthYear,
-        ageGroup: userData.ageGroup,
+        birthToken,
         role: userData.role ?? 'user',
         country: userData.country,
         ethnicity: userData.ethnicity,
@@ -222,15 +234,14 @@ export const useUserStore = create<UserState>()((set, get) => ({
       const authId = get().authId;
       const isDemoMode = get().isDemoMode;
       if (authId && !isDemoMode) {
-        const _ageForStore = calculateAge(userProfile.birthMonth, userProfile.birthYear);
-        const _ageGroupForStore = getAgeGroup(_ageForStore);
         const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
             id: authId,
             onboarded: userProfile.onboarded,
             life_stage: userProfile.lifeStage,
-            age_group: _ageGroupForStore,
+            birth_month: userProfile.birthMonth ?? null,
+            birth_year: userProfile.birthYear ?? null,
           }, {
             onConflict: 'id',
           });
@@ -239,6 +250,20 @@ export const useUserStore = create<UserState>()((set, get) => ({
           console.error('[UserStore] DB upsert error during register:', upsertError);
         } else {
           console.log('[UserStore] User persisted to DB');
+        }
+
+        if (userProfile.birthMonth && userProfile.birthYear) {
+          try {
+            await supabase.functions.invoke('save-birth-data', {
+              body: {
+                userId: authId,
+                birthMonth: userProfile.birthMonth,
+                birthYear: userProfile.birthYear,
+              },
+            });
+          } catch (err) {
+            console.warn('[UserStore] save-birth-data call error:', err);
+          }
         }
       }
       
@@ -282,12 +307,11 @@ export const useUserStore = create<UserState>()((set, get) => ({
             const p = profileData.profile;
             currentUser = {
               id: p.id,
-              uniqueId: p.id,
+              uniqueId: p.unique_id || generate7DigitId(),
               displayName: p.username,
               role: 'user',
               onboarded: p.onboarded ?? false,
               lifeStage: p.life_stage,
-          ageGroup: p.age_group || undefined,
             };
             set({ user: currentUser });
             console.log('[updateProfile] User recovered from profile');
@@ -299,30 +323,50 @@ export const useUserStore = create<UserState>()((set, get) => ({
         throw new Error('No user logged in');
       }
       
+      const updatedBirthMonth = updates.birthMonth ?? currentUser.birthMonth;
+      const updatedBirthYear = updates.birthYear ?? currentUser.birthYear;
+      const birthToken = (updatedBirthMonth && updatedBirthYear)
+        ? encodeBirthData(updatedBirthMonth, updatedBirthYear)
+        : (updates.birthToken ?? currentUser.birthToken);
+
       const updatedUser: UserProfile = {
         ...currentUser,
         ...updates,
+        birthToken,
       };
       
       const authId = get().authId;
       const isDemoMode = get().isDemoMode;
       
       if (authId && !isDemoMode) {
-        const _ageForUpdate = calculateAge(updatedUser.birthMonth, updatedUser.birthYear);
-        const _ageGroupForUpdate = getAgeGroup(_ageForUpdate);
         const { error: updateError } = await supabase
           .from('profiles')
           .upsert({
             id: authId,
             onboarded: updatedUser.onboarded,
             life_stage: updatedUser.lifeStage,
-            age_group: _ageGroupForUpdate,
+            birth_month: updatedUser.birthMonth ?? null,
+            birth_year: updatedUser.birthYear ?? null,
           }, {
             onConflict: 'id',
           });
         
         if (updateError) {
           console.error('Supabase update error:', updateError);
+        }
+
+        if (updatedUser.birthMonth && updatedUser.birthYear) {
+          try {
+            await supabase.functions.invoke('save-birth-data', {
+              body: {
+                userId: authId,
+                birthMonth: updatedUser.birthMonth,
+                birthYear: updatedUser.birthYear,
+              },
+            });
+          } catch (err) {
+            console.warn('[UserStore] save-birth-data update error:', err);
+          }
         }
       }
       

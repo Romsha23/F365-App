@@ -11,10 +11,11 @@ import Colors from '../constants/colors';
 import { generateInitialCycleData } from '../utils/mock-data';
 import { generateQuickCoolName } from '../utils/display-name-generator';
 import { ChevronDown, Eye, EyeOff, Calendar, Check } from 'lucide-react-native';
-import { calculateAge } from '../utils/age-gate';
 import { CountryPicker } from '../components/CountryPicker';
 import { useFeatureGateStore } from '../store/feature-gate-store';
 import { ConsentCheckbox } from '../components/DisclaimerBanner';
+import { calculateAge } from '../utils/age-gate';
+import { encodeBirthData } from '../utils/birth-crypto';
 import {
   Ethnicity,
   ActivityLevel,
@@ -69,7 +70,9 @@ const MONTHS = [
 
 const currentYear = new Date().getFullYear();
 const YEARS = [currentYear.toString()];
-const BIRTH_YEARS = Array.from({ length: 70 }, (_, i) => (currentYear - 10 - i).toString());
+// Birth years: from 10 years ago back to 80 years ago (ages ~10–80).
+// Younger years first so teens can easily find their year at the top.
+const BIRTH_YEARS = Array.from({ length: 71 }, (_, i) => (currentYear - 10 - i).toString());
 
 const CYCLE_LENGTHS = Array.from({ length: 15 }, (_, i) => (i + 21).toString());
 
@@ -128,6 +131,7 @@ export default function OnboardingScreen() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [showTeenModal, setShowTeenModal] = useState(false);
 
   const { setMode: setPregnancyMode } = usePregnancyStore();
 
@@ -156,13 +160,11 @@ export default function OnboardingScreen() {
         Alert.alert('Required', 'Please select your birth month and year');
         return;
       }
-      const _age = calculateAge(parseInt(birthMonth), parseInt(birthYear));
-      if (_age !== undefined && _age < 18) {
-        Alert.alert(
-          'Age Requirement',
-          'f365 is designed for users aged 18 and above. You must be at least 18 years old to continue.',
-          [{ text: 'OK', style: 'default' }]
-        );
+      // Under-18 users are welcome — show a modal before advancing.
+      // v2: uses modal state, not Alert (Alert is non-blocking and advances step immediately)
+      const age = calculateAge(parseInt(birthMonth, 10), parseInt(birthYear, 10));
+      if (age !== undefined && age < 18) {
+        setShowTeenModal(true);
         return;
       }
     } else if (currentStepType === 'lifestyle') {
@@ -275,11 +277,18 @@ export default function OnboardingScreen() {
       
       const authEmail = session?.user?.email || user?.email || undefined;
       
+      const parsedBirthMonth = parseInt(birthMonth) || undefined;
+      const parsedBirthYear = parseInt(birthYear) || undefined;
+      const birthToken = (parsedBirthMonth && parsedBirthYear)
+        ? encodeBirthData(parsedBirthMonth, parsedBirthYear)
+        : undefined;
+
       const userProfile: any = {
         uniqueId,
         email: authEmail,
-        birthMonth: parseInt(birthMonth) || undefined,
-        birthYear: parseInt(birthYear) || undefined,
+        birthMonth: parsedBirthMonth,
+        birthYear: parsedBirthYear,
+        birthToken,
         country: country || undefined,
         ethnicity: ethnicity || undefined,
         activityLevel: activityLevel || undefined,
@@ -1593,6 +1602,37 @@ export default function OnboardingScreen() {
       {renderPeriodLengthModal()}
       {renderBirthMonthModal()}
       {renderBirthYearModal()}
+      <Modal
+        visible={showTeenModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTeenModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: 24, width: '85%', alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A2E', marginBottom: 12, textAlign: 'left', alignSelf: 'stretch' }}>
+              Age Requirement
+            </Text>
+            <Text style={{ fontSize: 15, color: '#3D3D3D', lineHeight: 22, marginBottom: 4, textAlign: 'left', alignSelf: 'stretch' }}>
+              f365 is designed for users aged 18 and above. You must be at least 18 years old to continue.
+            </Text>
+            <View style={{ backgroundColor: '#EEF2FF', borderRadius: 8, padding: 10, marginTop: 10, marginBottom: 16, alignSelf: 'stretch' }}>
+              <Text style={{ fontSize: 13, color: '#4338CA', lineHeight: 18, textAlign: 'left' }}>
+                You can still access cycle tracking, mood logs, and health education right now. Advanced features like IVF tools and fertility clinics unlock at 18.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setShowTeenModal(false)}
+              activeOpacity={0.7}
+              style={{ alignSelf: 'flex-end' }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '700', color: Colors.primary, paddingVertical: 4, paddingHorizontal: 8 }}>
+                OK
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       {renderEthnicityModal()}
       {renderActivityModal()}
       {renderDietModal()}

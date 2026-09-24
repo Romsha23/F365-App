@@ -21,6 +21,57 @@ import { useSubscriptionStore } from '../store/subscription-store';
 import { useUserStore } from '../store/user-store';
 import { SubscriptionPlan } from '../types/subscription';
 
+// Write a proper row to the subscriptions table so validateSubscription can restore state on next login
+async function upsertSubscriptionRow(
+  authId: string,
+  plan: SubscriptionPlan,
+  currentPeriodEnd: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const existing = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('user_id', authId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (existing.data?.id) {
+    // Update the existing row
+    await supabase
+      .from('subscriptions')
+      .update({
+        plan,
+        status: 'active',
+        current_period_end: currentPeriodEnd,
+        updated_at: now,
+        cancel_at_period_end: false,
+        canceled_at: null,
+      })
+      .eq('id', existing.data.id);
+  } else {
+    // Insert a new row
+    await supabase.from('subscriptions').insert({
+      user_id: authId,
+      plan,
+      status: 'active',
+      current_period_start: now,
+      current_period_end: currentPeriodEnd,
+      cancel_at_period_end: false,
+      created_at: now,
+      updated_at: now,
+      amount: plan === 'yearly' ? 6999 : 999,
+      currency: 'USD',
+    });
+  }
+
+  // Also keep profiles.is_premium in sync
+  await supabase
+    .from('profiles')
+    .update({ is_premium: true, subscription_active: true })
+    .eq('id', authId);
+}
+
 type RedemptionResult = {
   success: boolean;
   message: string;
@@ -34,7 +85,7 @@ export default function RedeemCodeScreen() {
   const [result, setResult] = useState<RedemptionResult | null>(null);
   
   const { user, authId } = useUserStore();
-  const { createSubscription, updateSubscription, subscription } = useSubscriptionStore();
+  const { createSubscription, updateSubscription, subscription, validateSubscription } = useSubscriptionStore();
 
   const getSubscriptionDuration = (productType: string): { months: number; plan: SubscriptionPlan } => {
     switch (productType) {
@@ -147,18 +198,34 @@ export default function RedeemCodeScreen() {
         }
         
         endDate.setMonth(endDate.getMonth() + months);
+        const endDateStr = endDate.toISOString();
 
+        // 1. Write to the subscriptions table so it survives sign-out/sign-in
+        try {
+          await upsertSubscriptionRow(authId, plan, endDateStr);
+          console.log('[RedeemCode] Subscription row upserted to Supabase');
+        } catch (dbError) {
+          console.warn('[RedeemCode] Failed to upsert subscription row:', dbError);
+        }
+
+        // 2. Update local store
         if (subscription) {
           await updateSubscription({
             plan,
             status: 'active',
-            currentPeriodEnd: endDate.toISOString(),
+            currentPeriodEnd: endDateStr,
             cancelAtPeriodEnd: false,
           });
         } else {
           await createSubscription(plan, user?.id || authId);
         }
 
+        // 3. Re-validate from DB to make sure local store reflects the upserted row
+        try {
+          await validateSubscription(authId);
+        } catch (valErr) {
+          console.warn('[RedeemCode] Post-redeem validateSubscription failed:', valErr);
+        }
       }
 
       setResult({

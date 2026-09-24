@@ -1,7 +1,6 @@
-import React from 'react';
+﻿import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import Colors from '../constants/colors';
-import { Smile, Frown, Heart, Activity } from 'lucide-react-native';
 
 interface CalendarDayProps {
   date: Date;
@@ -20,166 +19,85 @@ interface CalendarDayProps {
 }
 
 export const CalendarDay: React.FC<CalendarDayProps> = ({
-  date,
-  isCurrentMonth,
-  isToday,
-  isPeriod,
-  isFertile,
-  isOvulation,
-  isPredicted,
-  dayData,
-  onPress,
+  date, isCurrentMonth, isToday, isPeriod, isFertile, isOvulation, isPredicted, dayData, onPress,
 }) => {
   const handlePress = () => {
     try {
-      if (date && !isNaN(date.getTime())) {
-        onPress(date);
-      }
-    } catch (error) {
-      console.error('Error handling calendar day press:', error);
-    }
-  };
-
-  const getDayStyle = () => {
-    if (isPeriod) return isPredicted ? styles.predictedPeriodDay : styles.periodDay;
-    if (isOvulation) return styles.ovulationDay;
-    if (isFertile) return styles.fertileDay;
-    if (isToday) return styles.today;
-    return isCurrentMonth ? styles.currentMonth : styles.otherMonth;
-  };
-
-  const getDayTextStyle = () => {
-    if (isToday) return styles.todayText;
-    if (!isCurrentMonth) return styles.otherMonthText;
-    if (isPeriod || isOvulation) return styles.highlightedDayText;
-    return styles.dayText;
+      if (date && !isNaN(date.getTime())) onPress(date);
+    } catch (e) { console.error(e); }
   };
 
   const getDayNumber = () => {
     try {
       if (!date || isNaN(date.getTime())) return '?';
       return date.getDate().toString();
-    } catch {
-      return '?';
-    }
+    } catch { return '?'; }
   };
 
-  const getMoodIcon = () => {
-    if (!dayData?.mood) return null;
-    const iconSize = 10;
-    const iconColor = Colors.white;
-    switch (dayData.mood) {
-      case 'happy':
-      case 'energetic':
-        return <Smile size={iconSize} color={iconColor} />;
-      case 'sad':
-      case 'irritated':
-      case 'anxious':
-        return <Frown size={iconSize} color={iconColor} />;
-      case 'emotional':
-        return <Heart size={iconSize} color={iconColor} />;
-      default:
-        return <Activity size={iconSize} color={iconColor} />;
-    }
+  const getCircleBg = (): string | undefined => {
+    if (isPeriod && !isPredicted) return Colors.error;
+    if (isPeriod && isPredicted) return '#F9A8D4';
+    if (isOvulation) return Colors.secondary;
+    if (isFertile) return Colors.success;
+    if (isToday) return Colors.secondary;
+    return undefined;
   };
 
-  const hasSymptoms = dayData?.symptoms && dayData.symptoms.length > 0;
-  const hasMood = dayData?.mood !== undefined;
+  const circleBg = getCircleBg();
+  const hasCircle = !!circleBg;
+
+  const getTextColor = (): string => {
+    if (hasCircle) return '#FFFFFF';
+    if (!isCurrentMonth) return '#C4B5D1';
+    return Colors.text;
+  };
+
+  const hasDot = !!(dayData?.symptoms && dayData.symptoms.length > 0) || !!dayData?.mood;
 
   return (
-    <View style={styles.cell}>
-      <TouchableOpacity
-        style={[styles.dayContainer, getDayStyle()]}
-        onPress={handlePress}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.dayText, getDayTextStyle()]}>
+    <TouchableOpacity style={styles.cell} onPress={handlePress} activeOpacity={0.7}>
+      <View style={[styles.circle, hasCircle && { backgroundColor: circleBg }]}>
+        <Text style={[styles.dayText, { color: getTextColor() }, isToday && !hasCircle && styles.todayText]}>
           {getDayNumber()}
         </Text>
-        <View style={styles.indicatorsRow}>
-          {isPredicted && <View style={styles.predictedIndicator} />}
-          {hasMood && <View style={styles.moodIconContainer}>{getMoodIcon()}</View>}
-          {hasSymptoms && <View style={styles.symptomIndicator} />}
-        </View>
-      </TouchableOpacity>
-    </View>
+      </View>
+      {hasDot ? <View style={styles.dot} /> : <View style={styles.dotPlaceholder} />}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  // Outer cell takes exactly 1/7 of the row width
   cell: {
-    flex: 1,
+    width: '14.2857%' as any,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
-  // Inner circle — fixed size, centred inside the cell
-  dayContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
+  circle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   dayText: {
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '400',
     color: Colors.text,
   },
-  currentMonth: {
-    backgroundColor: 'transparent',
-  },
-  otherMonth: {
-    backgroundColor: 'transparent',
-  },
-  otherMonthText: {
-    color: Colors.inactive,
-  },
-  today: {
-    backgroundColor: Colors.secondary,
-  },
   todayText: {
-    color: Colors.white,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: Colors.secondary,
   },
-  highlightedDayText: {
-    color: Colors.white,
-    fontWeight: 'bold',
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.primary,
+    marginTop: 2,
   },
-  periodDay: {
-    backgroundColor: Colors.error,
-  },
-  predictedPeriodDay: {
-    backgroundColor: Colors.accent,
-  },
-  fertileDay: {
-    backgroundColor: Colors.success,
-    opacity: 0.7,
-  },
-  ovulationDay: {
-    backgroundColor: Colors.secondary,
-  },
-  indicatorsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  predictedIndicator: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: Colors.white,
-    marginHorizontal: 1,
-  },
-  moodIconContainer: {
-    marginHorizontal: 1,
-  },
-  symptomIndicator: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: Colors.warning,
-    marginHorizontal: 1,
+  dotPlaceholder: {
+    width: 4,
+    height: 4,
+    marginTop: 2,
   },
 });

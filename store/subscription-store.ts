@@ -85,13 +85,30 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           // Log subscription creation
           logDataCreate(userId, 'subscription', newSubscription.id);
           
-          // Sync to Supabase
+          // Sync to Supabase — upsert a proper row into the subscriptions table
+          // so validateSubscription can restore state on next login
           try {
+            const now = new Date().toISOString();
+            await supabase.from('subscriptions').upsert(
+              {
+                user_id: userId,
+                plan: newSubscription.plan,
+                status: 'active',
+                current_period_start: newSubscription.currentPeriodStart,
+                current_period_end: newSubscription.currentPeriodEnd,
+                cancel_at_period_end: false,
+                amount: newSubscription.amount,
+                currency: newSubscription.currency,
+                created_at: now,
+                updated_at: now,
+              },
+              { onConflict: 'user_id' }
+            );
             await supabase
               .from('profiles')
-              .update({ subscription_active: true })
+              .update({ is_premium: true, subscription_active: true })
               .eq('id', userId);
-            console.log('[SubscriptionStore] Synced subscription to Supabase');
+            console.log('[SubscriptionStore] Synced new subscription to Supabase');
           } catch (supabaseError) {
             console.warn('[SubscriptionStore] Failed to sync to Supabase:', supabaseError);
           }
@@ -123,12 +140,23 @@ export const useSubscriptionStore = create<SubscriptionState>()(
           // Log subscription update
           logDataUpdate(currentSubscription.userId, 'subscription', currentSubscription.id);
           
-          // Sync to Supabase
+          // Sync to Supabase — update the subscriptions table row too
           const isActive = updatedSubscription.status === 'active';
           try {
             await supabase
+              .from('subscriptions')
+              .update({
+                plan: updatedSubscription.plan,
+                status: updatedSubscription.status,
+                current_period_end: updatedSubscription.currentPeriodEnd,
+                cancel_at_period_end: updatedSubscription.cancelAtPeriodEnd,
+                canceled_at: updatedSubscription.canceledAt ?? null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('user_id', currentSubscription.userId);
+            await supabase
               .from('profiles')
-              .update({ subscription_active: isActive })
+              .update({ is_premium: isActive, subscription_active: isActive })
               .eq('id', currentSubscription.userId);
             console.log('[SubscriptionStore] Synced subscription update to Supabase');
           } catch (supabaseError) {

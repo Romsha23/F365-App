@@ -1066,7 +1066,7 @@ export default function HomeScreen() {
               <Text style={styles.date}>{getSafeFormattedDate()}</Text>
               {user?.uniqueId ? (
                 <View style={styles.idBadge}>
-                  <Text style={styles.idBadgeText}>ID: {user.uniqueId}</Text>
+                  <Text style={styles.idBadgeText} numberOfLines={1}>ID: {user.uniqueId.replace(/-/g, "").replace(/[^0-9]/g, "").substring(0, 7) || user.uniqueId.substring(0, 7)}</Text>
                 </View>
               ) : null}
             </View>
@@ -1709,6 +1709,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   idBadge: {
+    maxWidth: 120,
     backgroundColor: '#F5F0FF',
     paddingHorizontal: 10,
     paddingVertical: 4,

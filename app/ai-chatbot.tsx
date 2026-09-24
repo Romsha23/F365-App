@@ -6,9 +6,10 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
+  KeyboardEvent,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { useSubscriptionStore } from '../store/subscription-store';
@@ -75,15 +76,21 @@ export default function AIChatbotScreen() {
     }, 100);
   }, [messages.length]);
 
-  // Scroll to end when keyboard appears
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Track keyboard height — use it directly to pad the bottom
   useEffect(() => {
-    const { Keyboard } = require('react-native');
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 150);
+    const show = Keyboard.addListener('keyboardDidShow', (e: KeyboardEvent) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    return () => sub.remove();
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
 
   if (!hasPremium) {
@@ -297,17 +304,14 @@ Remember: You're a health assistant, not a replacement for medical care. Always 
           ),
         }}
       />
-      
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 80}
-      >
+
+      <View style={[styles.keyboardView, Platform.OS === 'android' && { marginBottom: keyboardHeight }]}>
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {!disclaimerDismissed && (
             <DisclaimerBanner
@@ -420,7 +424,7 @@ Remember: You're a health assistant, not a replacement for medical care. Always 
             <Send size={20} color={Colors.white} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -442,7 +446,7 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: 16,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   messageWrapper: {
     marginBottom: 16,

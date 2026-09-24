@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch as RNSwitch, TouchableOpacity, Alert, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router, Href } from 'expo-router';
@@ -10,8 +10,8 @@ import { usePregnancyStore } from '../../store/pregnancy-store';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import Colors from '../../constants/colors';
-import { Bell, Heart, Shield, HelpCircle, LogOut, FileText, Lock, ChevronRight, Download, Key, Crown, Zap, Stethoscope, Video, Bot, TrendingUp, Gift, Users, BookOpen, Baby, Sparkles, Check } from 'lucide-react-native';
-import { LIFE_STAGE_OPTIONS } from '@/types/user';
+import { Bell, Heart, Shield, HelpCircle, LogOut, FileText, Lock, ChevronRight, Download, Key, Crown, Zap, Stethoscope, Video, Bot, TrendingUp, Gift, Users, BookOpen, Baby, Sparkles, Check, Pill, Activity } from 'lucide-react-native';
+import { LIFE_STAGE_OPTIONS, CONTRACEPTIVE_TYPE_LABELS, HEALTH_CONDITION_LABELS } from '@/types/user';
 
 import { logSettingsChange } from '../../utils/audit-logger';
 
@@ -209,10 +209,10 @@ export default function ProfileScreen() {
                   </View>
                 )}
               </View>
-              <Text style={styles.profileEmail}>{user?.uniqueId || 'ID not available'}</Text>
+              <Text style={styles.profileEmail} numberOfLines={1}>ID: {user?.uniqueId ? (user.uniqueId.replace(/-/g, '').replace(/[^0-9]/g, '').substring(0, 7) || user.uniqueId.substring(0, 7)) : 'N/A'}</Text>
               {user?.birthYear && user?.country && (
                 <Text style={styles.profileDetails}>
-                  Born {user.birthMonth}/{user.birthYear} • {user.country}
+                  Born {user.birthMonth}/{user.birthYear} â€¢ {user.country}
                 </Text>
               )}
               {isAdmin && (
@@ -376,6 +376,46 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               )}
+
+              {/* Contraceptive Method */}
+              <TouchableOpacity
+                style={styles.infoRowTappable}
+                onPress={() => router.push('/edit-profile' as Href)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.infoRowTappableLeft}>
+                  <Pill size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.infoLabel}>Contraceptive Method</Text>
+                </View>
+                <View style={styles.infoRowTappableRight}>
+                  <Text style={styles.infoValueMuted}>
+                    {user?.contraceptiveType && user.contraceptiveType !== 'none'
+                      ? CONTRACEPTIVE_TYPE_LABELS[user.contraceptiveType]
+                      : 'Not set'}
+                  </Text>
+                  <ChevronRight size={16} color={Colors.subtext} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Health Conditions */}
+              <TouchableOpacity
+                style={[styles.infoRowTappable, { borderBottomWidth: 0 }]}
+                onPress={() => router.push('/edit-profile' as Href)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.infoRowTappableLeft}>
+                  <Activity size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.infoLabel}>Health Conditions</Text>
+                </View>
+                <View style={styles.infoRowTappableRight}>
+                  <Text style={styles.infoValueMuted} numberOfLines={1}>
+                    {user?.healthConditions && user.healthConditions.length > 0
+                      ? user.healthConditions.map((c: string) => HEALTH_CONDITION_LABELS[c as keyof typeof HEALTH_CONDITION_LABELS]).join(', ')
+                      : 'Not set'}
+                  </Text>
+                  <ChevronRight size={16} color={Colors.subtext} />
+                </View>
+              </TouchableOpacity>
             </Card>
           </>
         )}
@@ -934,6 +974,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
+  },
+  infoValueMuted: {
+    fontSize: 13,
+    color: Colors.subtext,
+    maxWidth: 160,
+    textAlign: 'right',
+  },
+  infoRowTappable: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  infoRowTappableLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  infoRowTappableRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '55%',
   },
   symptomsContainer: {
     marginTop: 8,

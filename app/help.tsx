@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, TextInput, ActivityIndicator, Platform, Keyboard } from 'react-native';
 import { Stack } from 'expo-router';
 import { Card } from '../components/Card';
 import Colors from '../constants/colors';
@@ -17,7 +17,17 @@ export default function HelpScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollViewRef = React.useRef<ScrollView>(null);
+
+  React.useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const handleVisitWebsite = () => {
     void Linking.openURL('https://f365.app');
@@ -186,12 +196,13 @@ export default function HelpScreen() {
   );
 
   const renderChatTab = () => (
-    <View style={styles.chatContainer}>
+    <View style={[styles.chatContainer, Platform.OS === 'android' && { marginBottom: keyboardHeight }]}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {chatMessages.map((message, index) => (
           <View 
@@ -313,15 +324,18 @@ export default function HelpScreen() {
         </TouchableOpacity>
       </View>
       
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {activeTab === 'faq' && renderFaqTab()}
-        {activeTab === 'chat' && renderChatTab()}
-        {activeTab === 'contact' && renderContactTab()}
-      </ScrollView>
+      {activeTab === 'chat' ? (
+        renderChatTab()
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {activeTab === 'faq' && renderFaqTab()}
+          {activeTab === 'contact' && renderContactTab()}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -439,13 +453,16 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    height: 500, // Fixed height for chat container
+    minHeight: 400,
   },
   messagesContainer: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   messagesContent: {
-    paddingBottom: 16,
+    padding: 16,
+    paddingBottom: 24,
   },
   messageBubble: {
     padding: 12,
